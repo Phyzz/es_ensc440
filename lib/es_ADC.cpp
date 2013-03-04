@@ -29,8 +29,9 @@ int es_ADC::takeReading(ADCChannelEnum channel, bool differential_reading) {
     
     int reading = 0;
     reading |= rx_buffer[0];
-    reading <<= 3;
-    rx_buffer[1] >>= 5;
+    reading &= 0x7F;
+    reading <<= 4;
+    rx_buffer[1] >>= 4;
     reading |= rx_buffer[1];
     
     return reading;
