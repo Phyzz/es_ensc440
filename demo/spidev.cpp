@@ -18,5 +18,12 @@ int main(int argc, char *argv[]){
     ch1 = adc.takeReading(CH_1, false);
     std::cout << "CH_0 reading: " << std::hex << ch0 << "\n";
     std::cout << "CH_1 reading: " << std::hex << ch1 << "\n";
+    
+    for (int i = 0; i < 0x3FF; i += 10) {
+        dac.setChannelLevel(CH_B, i, false, false);
+        int ch0 = adc.takeReading(CH_1, false);
+        std::cout << "Input: " << std::hex << i << "\t" << "Output: " << std::hex << ch0 << "\n";
+        sleep(5);
+    }
     return 0;
 }
