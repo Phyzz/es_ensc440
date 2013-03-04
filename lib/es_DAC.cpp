@@ -10,9 +10,9 @@ void es_DAC::setChannelLevel(ChannelEnum channel, unsigned int level, bool gain,
     }
     unsigned char tx_buffer[2];
     if (channel == CH_A) {
-        tx_buffer[0] = 0x80;
-    } else {
         tx_buffer[0] = 0x00;
+    } else {
+        tx_buffer[0] = 0x80;
     }
     tx_buffer[1] = 0x00;
     if (!gain) {
