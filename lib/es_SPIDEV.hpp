@@ -60,6 +60,8 @@ class es_SPIDEV {
         *       deselect_after: Determines wheter the SPI device is deselected after the transmission is complete.
         ****************************/
         void recieve(unsigned char *rx_buf, bool deslect_after);
+        
+        void half_duplex(unsigned char *tx_buf, unsigned char *rx_buf, bool deselect_between, bool deselect_after);
 
         ~es_SPIDEV();
 

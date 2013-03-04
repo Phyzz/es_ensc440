@@ -25,8 +25,7 @@ int es_ADC::takeReading(ADCChannelEnum channel, bool differential_reading) {
     rx_buffer[0] = 0x00;
     rx_buffer[1] = 0x00;
     
-    this->interface.transmit(tx_buffer, false);
-    this->interface.recieve(rx_buffer, true);
+    this->interface.half_duplex(tx_buffer, rx_buffer, false, true);
     
     int reading = 0;
     reading |= rx_buffer[0];

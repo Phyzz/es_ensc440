@@ -74,14 +74,39 @@ void es_SPIDEV::recieve(unsigned char *rx_buffer, bool deslect_after) {
     transfer.len = sizeof rx_buffer;
     transfer.cs_change = deslect_after;
     
-    int rc = ioctl(this->spidev_fh,  SPI_IOC_MESSAGE(1), &transfer);
-    if (rc < 0) {
-        throw es_SPI_EX_TRANSFER();
-    }
-    
     transfer.speed_hz = 0;
     transfer.bits_per_word = 0;
     transfer.delay_usecs = 0;
+    
+    int rc = ioctl(this->spidev_fh,  SPI_IOC_MESSAGE(1), &transfer);
+    if (rc < 0) {
+        throw es_SPI_EX_TRANSFER();
+    } 
+}
+
+void es_SPIDEV::half_duplex(unsigned char *tx_buffer, unsigned char *rx_buffer, bool deselect_between, bool deselect_after){
+    struct spi_ioc_transfer transfers[2];
+    
+    transfers[0].tx_buf = (unsigned long) tx_buffer;
+    transfers[0].rx_buf = 0;
+    transfers[0].len = sizeof tx_buffer;
+    transfers[0].cs_change = deselect_between;
+    
+    transfers[1].tx_buf = 0;
+    transfers[1].rx_buf = (unsigned long) rx_buffer;
+    transfers[1].len = sizeof rx_buffer;
+    transfers[1].cs_change = deselect_after;
+    
+    for (int i = 0; i < 2; ++i) {
+        transfers[i].speed_hz = 0;
+        transfers[i].bits_per_word = 0;
+        transfers[i].delay_usecs = 0;
+    }
+    
+    int rc = ioctl(this->spidev_fh,  SPI_IOC_MESSAGE(2), transfers);
+    if (rc < 0) {
+        throw es_SPI_EX_TRANSFER();
+    } 
 }
 
 es_SPIDEV::~es_SPIDEV() {
