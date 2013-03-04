@@ -27,7 +27,7 @@ void es_DAC::setChannelLevel(DACChannelEnum channel, unsigned int level, bool ga
     level >>= 6;
     tx_buffer[0] |= level;
     
-    this->interface.transmit(tx_buffer, true);
+    this->interface.transmit(tx_buffer, 2, true);
 }
         
 es_DAC::~es_DAC(){

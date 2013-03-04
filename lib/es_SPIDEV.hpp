@@ -52,16 +52,16 @@ class es_SPIDEV {
         *       *tx_buffer: A pointer to a buffer containing the data to be transmitted.
         *       deselect_after: Determines wheter the SPI device is deselected after the transmission is complete.
         ****************************/
-        void transmit(unsigned char *tx_buffer, bool deslect_after);
+        void transmit(unsigned char *tx_buffer, int tx_len, bool deslect_after);
         
         /****************************
         *   Attempt to read data from an SPI device.
         *       *tx_buffer: A pointer to a buffer where the recieved data will be stored.
         *       deselect_after: Determines wheter the SPI device is deselected after the transmission is complete.
         ****************************/
-        void recieve(unsigned char *rx_buf, bool deslect_after);
+        void recieve(unsigned char *rx_buf, int rx_len, bool deslect_after);
         
-        void half_duplex(unsigned char *tx_buf, unsigned char *rx_buf, bool deselect_between, bool deselect_after);
+        void half_duplex(unsigned char *tx_buf, int tx_len, unsigned char *rx_buf, int rx_len, bool deselect_between, bool deselect_after);
 
         ~es_SPIDEV();
 

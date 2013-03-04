@@ -48,12 +48,12 @@ void es_SPIDEV::setBitsPerWord(int bits_per_word) {
     }
 }
 
-void es_SPIDEV::transmit(unsigned char *tx_buffer, bool deslect_after) {
+void es_SPIDEV::transmit(unsigned char *tx_buffer, int tx_len, bool deslect_after) {
     struct spi_ioc_transfer transfer;
     
     transfer.tx_buf = (unsigned long) tx_buffer;
     transfer.rx_buf = 0;
-    transfer.len = sizeof tx_buffer;
+    transfer.len = tx_len;
     transfer.cs_change = deslect_after;
     
     transfer.speed_hz = 0;
@@ -66,12 +66,12 @@ void es_SPIDEV::transmit(unsigned char *tx_buffer, bool deslect_after) {
     }
 }
 
-void es_SPIDEV::recieve(unsigned char *rx_buffer, bool deslect_after) {
+void es_SPIDEV::recieve(unsigned char *rx_buffer, int rx_len, bool deslect_after) {
     struct spi_ioc_transfer transfer;
     
     transfer.rx_buf = (unsigned long) rx_buffer;
     transfer.tx_buf = 0;
-    transfer.len = sizeof rx_buffer;
+    transfer.len = rx_len;
     transfer.cs_change = deslect_after;
     
     transfer.speed_hz = 0;
@@ -84,17 +84,17 @@ void es_SPIDEV::recieve(unsigned char *rx_buffer, bool deslect_after) {
     } 
 }
 
-void es_SPIDEV::half_duplex(unsigned char *tx_buffer, unsigned char *rx_buffer, bool deselect_between, bool deselect_after){
+void es_SPIDEV::half_duplex(unsigned char *tx_buffer, int tx_len, unsigned char *rx_buffer, int rx_len, bool deselect_between, bool deselect_after){
     struct spi_ioc_transfer transfers[2];
     
     transfers[0].tx_buf = (unsigned long) tx_buffer;
     transfers[0].rx_buf = 0;
-    transfers[0].len = sizeof tx_buffer;
+    transfers[0].len = tx_len;
     transfers[0].cs_change = deselect_between;
     
     transfers[1].tx_buf = 0;
     transfers[1].rx_buf = (unsigned long) rx_buffer;
-    transfers[1].len = sizeof rx_buffer;
+    transfers[1].len = rx_len;
     transfers[1].cs_change = deselect_after;
     
     for (int i = 0; i < 2; ++i) {
