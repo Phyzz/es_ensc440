@@ -7,14 +7,14 @@
 
 using std::string;
 
-enum ChannelEnum { CH_A, CH_B };
+enum DACChannelEnum { CH_A, CH_B };
 
 class es_DAC {
 
     public:
         es_DAC(string device_path);
         
-        void setChannelLevel(ChannelEnum channel, unsigned int level, bool gain, bool shutdwon);
+        void setChannelLevel(DACChannelEnum channel, unsigned int level, bool gain, bool shutdwon);
         
         ~es_DAC();
         

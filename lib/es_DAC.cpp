@@ -4,7 +4,7 @@
 es_DAC::es_DAC(string device_path) : interface(device_path) {
 }
         
-void es_DAC::setChannelLevel(ChannelEnum channel, unsigned int level, bool gain, bool shutdown) {
+void es_DAC::setChannelLevel(DACChannelEnum channel, unsigned int level, bool gain, bool shutdown) {
     if (level > 0x3FF || level < 0) {
         throw es_INVALID_ARGS_EX();
     }
