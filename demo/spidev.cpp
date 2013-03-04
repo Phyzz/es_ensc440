@@ -1,10 +1,9 @@
-#include "../lib/es_SPIDEV.hpp"
+#include "../lib/es_DAC.hpp"
 
 int main(int argc, char *argv[]){
-    es_SPIDEV interface = es_SPIDEV("/dev/spidev0.1");
-    unsigned char tx_buf[2];
-    tx_buf[0] = 0x1F;
-    tx_buf[1] = 0xFF;
-    interface.transmit(tx_buf, true);
+    es_DAC dac = es_DAC("/dev/spidev0.1");
+    dac.setChannelLevel(CH_A, 0x3FF, false, false);
+    sleep(5);
+    dac.setChannelLevel(CH_A, 0x000, false, false);
     return 0;
 }
