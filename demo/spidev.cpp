@@ -22,7 +22,8 @@ int main(int argc, char *argv[]){
     for (int i = 0; i < 0x3FF; i += 10) {
         dac.setChannelLevel(CH_B, i, false, false);
         int ch0 = adc.takeReading(CH_1, false);
-        std::cout << "Input: " << std::hex << i << "\t" << "Output: " << std::hex << ch0 << "\n";
+        float ratio = ch0 / (float) i;
+        std::cout << "Input: " << std::hex << i << "\t" << "Output: " << std::hex << ch0 << "\t" << "Ratio: " << std::defaultfloat << ratio << "\n";
         sleep(5);
     }
     return 0;
