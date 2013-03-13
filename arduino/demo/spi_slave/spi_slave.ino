@@ -1,6 +1,5 @@
 #include <SPI.h>
 #include "pins_arduino.h"
-int SS_PIN =
 
 #define START_TX      0xFA
 #define CONTINUE_TX   0xF5
@@ -9,21 +8,49 @@ int SS_PIN =
 #define NOT_READY     0xFD
 #define READY         0xFC
 
-int samples[10] = {0, 1, 2, 3, 4, 5, 6, 7, 63 , 9};
-int sample_index = 0;
+byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
+unsigned int sample_index = 0;
+unsigned int sample_interval = 1000; //in microseconds
+unsigned int next_sample = 0;
 
-int dump_index = 0;
-boolean high_byte = true;
 
-enum State {DATA_COLLECTION_INCOMPLETE, DATA_COLLECTION_COMPLETE, DATA_DUMP, DUMP_COMPLETE, ERROR_STATE};
+volatile unsigned int dump_index;
+unsigned int dump_end_index;
 
-State current_state = DATA_COLLECTION_COMPLETE;
+enum State {DATA_COLLECTION_INCOMPLETE, DATA_COLLECTION_COMPLETE, DATA_DUMP};
 
-// Reset everything when an SPI communication finishes
-void ss_rise () {
-  current_state = DATA_COLLECTION_COMPLETE;
-  dump_index = 0;
-  high_byte = true;
+volatile State current_state = DATA_COLLECTION_COMPLETE;
+volatile byte prev_pin2;
+
+void ss_change () {
+  byte pin2 = PIND & 0x04;
+  if (pin2 != prev_pin2) {
+    // rising edge after a dump. rising edge after saying not ready doesn't require any changes
+    if(pin2 && current_state == DATA_DUMP) {
+      current_state = DATA_COLLECTION_INCOMPLETE;
+      sample_index = 0;
+    // falling edge
+    } else {
+      if (current_state == DATA_COLLECTION_COMPLETE) {
+        // prep for a dump
+        current_state = DATA_DUMP;
+        SPDR = READY;
+        dump_end_index = sample_index - 1;
+        dump_index = sample_index;
+      } else {
+        SPDR = NOT_READY;
+      }
+    }
+    prev_pin2 = pin2;
+  }
+}
+void ss_fall () {
+  if (current_state == DATA_COLLECTION_COMPLETE) {
+    SPDR = ERROR;
+  } else {
+    SPDR = EOD;
+    current_state = DATA_COLLECTION_COMPLETE;
+  }
 }
 
 void setup() {
@@ -36,60 +63,38 @@ void setup() {
   // enable SPI interrupts
   SPCR |= _BV(SPIE);
   
-  //interupt 0 on pin 2
-  attachInterrups(0, ss_rise, RISING);
+  //interupt 0 on pin 2, pin 2 connected to pin 10
+  attachInterrupt(0, ss_change, CHANGE);
 }
 
 ISR (SPI_STC_vect) {
-  byte recieved_byte = SPDR;
-  
-  if (current_state == DATA_COLLECTION_INCOMPLETE) {
-    if (recieved_byte == START_TX) {
-      SPDR = NOT_READY;
-    } else {
-      current_state = ERROR_STATE;
-      SPDR = ERROR;
-    }
-  } else if (current_state == DATA_COLLECTION_COMPLETE) {
-    if (recieved_byte == START_TX) {
-      SPDR = READY;
-      current_state = DATA_DUMP;
-    } else {
-      current_state = ERROR_STATE;
-      SPDR = ERROR;
-    }
-  } else if (current_state == DATA_DUMP) {
-    if (recieved_byte == CONTINUE_TX) {
-      if(dump_index >= 10) {
-        current_state = DUMP_COMPLETE;
-        SPDR = EOD;
-      } else {
-        if (high_byte) {
-          SPDR = (byte) (samples[dump_index] >> 8);
-        } else {
-          SPDR = (byte) (samples[dump_index++]);
-        }
-        high_byte = !high_byte;
-      }
-    } else {
-      current_state = ERROR_STATE;
-      SPDR = ERROR;
-    }
-  } else if (current_state == DUMP_COMPLETE) {
-    if (recieved_byte = CONTINUE_TX) {
-      SPDR = EOD;
-    } else {
-      current_state = ERROR_STATE;
-      SPDR = ERROR;
-    }
-    
-  } else if (current_state == ERROR) {
-      SPDR = ERROR;
-  } else {
-      current_state = ERROR_STATE;
-      SPDR = ERROR;
+  if (dump_index == dump_end_index) {
+    SPDR = EOD;
+  } else  {
+    SPDR = samples[dump_index++];
+    // cut off any bits at 1024 or above to cause roll over
+    dump_index &= 0x3FF;
   }
 }
 
 void loop() {
+  // Only do stuff if not dumping data
+  if (current_state != DATA_DUMP) {
+    unsigned long current_time = micros();
+    if (current_time > next_sample) {
+      next_sample += sample_interval;
+      unsigned int sample = analogRead(0);
+      //This part needs to be atomic or assumption on the indexes may be broken.
+      noInterrupts();
+      samples[sample_index++] = (byte) (sample >> 8);
+      if (sample_index == 1023) {
+        current_state = DATA_COLLECTION_COMPLETE;
+      }
+      samples[sample_index++] = (byte) sample;
+      // cut off any bits at 1024 or above to cause roll over
+      sample_index &= 0x3FF;
+      interrupts();
+
+    }
+  }  
 }
