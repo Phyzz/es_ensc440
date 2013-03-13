@@ -62,6 +62,8 @@ class es_SPIDEV {
         void recieve(unsigned char *rx_buf, int rx_len, bool deslect_after);
         
         void half_duplex(unsigned char *tx_buf, int tx_len, unsigned char *rx_buf, int rx_len, bool deselect_between, bool deselect_after);
+        
+        void full_duplex(unsigned char *tx_buffer, unsigned char *rx_buffer, int len, bool deslect_after);
 
         ~es_SPIDEV();
 

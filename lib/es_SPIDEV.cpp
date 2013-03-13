@@ -109,6 +109,24 @@ void es_SPIDEV::half_duplex(unsigned char *tx_buffer, int tx_len, unsigned char 
     } 
 }
 
+void es_SPIDEV::full_duplex(unsigned char *tx_buffer, unsigned char *rx_buffer, int len, bool deslect_after) {
+    struct spi_ioc_transfer transfer;
+    
+    transfer.rx_buf = (unsigned long) rx_buffer;
+    transfer.tx_buf = (unsigned long) tx_buffer;
+    transfer.len = len;
+    transfer.cs_change = deslect_after;
+    
+    transfer.speed_hz = 0;
+    transfer.bits_per_word = 0;
+    transfer.delay_usecs = 0;
+    
+    int rc = ioctl(this->spidev_fh,  SPI_IOC_MESSAGE(1), &transfer);
+    if (rc < 0) {
+        throw es_SPI_EX_TRANSFER();
+    } 
+}
+
 es_SPIDEV::~es_SPIDEV() {
     close(this->spidev_fh);
 }
