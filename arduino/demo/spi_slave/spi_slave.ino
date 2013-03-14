@@ -11,15 +11,15 @@
 byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
 unsigned int sample_index = 0;
 unsigned int sample_interval = 1000; //in microseconds
-unsigned int next_sample = 0;
+unsigned long next_sample = 0;
 
 
 volatile unsigned int dump_index;
-unsigned int dump_end_index;
+volatile unsigned int dump_end_index;
 
 enum State {DATA_COLLECTION_INCOMPLETE, DATA_COLLECTION_COMPLETE, DATA_DUMP};
 
-volatile State current_state = DATA_COLLECTION_COMPLETE;
+volatile State current_state = DATA_COLLECTION_INCOMPLETE;
 volatile byte prev_pin2;
 
 void ss_change () {
@@ -35,66 +35,80 @@ void ss_change () {
         // prep for a dump
         current_state = DATA_DUMP;
         SPDR = READY;
-        dump_end_index = sample_index - 1;
-        dump_index = sample_index;
+        dump_end_index = (sample_index - 1) & 0x3FF;
+//        dump_index = sample_index;
+        dump_index = 0;
       } else {
         SPDR = NOT_READY;
+//        dump_end_index = dump_index;
+        dump_index = 1023;
       }
     }
     prev_pin2 = pin2;
   }
 }
-void ss_fall () {
-  if (current_state == DATA_COLLECTION_COMPLETE) {
-    SPDR = ERROR;
-  } else {
-    SPDR = EOD;
-    current_state = DATA_COLLECTION_COMPLETE;
-  }
-}
-
 void setup() {
-  //MISO and MOSI are stay the same in Slave mode, in other words connect straight across not cross over
+  //MISO and MOSI stay the same in Slave mode, in other words connect straight across not cross over
   pinMode(MISO, OUTPUT);
   
-  // set the SPI interface to slave mode
+  SPCR = 0;
+  // enable the SPI interface in slave mode
   SPCR |= _BV(SPE);
   
   // enable SPI interrupts
   SPCR |= _BV(SPIE);
   
-  //interupt 0 on pin 2, pin 2 connected to pin 10
+  //interupt 0 on pin 2, pin 2 connected to SS pin 10
   attachInterrupt(0, ss_change, CHANGE);
+  Serial.begin(9600);
 }
 
 ISR (SPI_STC_vect) {
-  if (dump_index == dump_end_index) {
+  if (dump_index == 1023) {//dump_end_index) {
     SPDR = EOD;
   } else  {
     SPDR = samples[dump_index++];
     // cut off any bits at 1024 or above to cause roll over
-    dump_index &= 0x3FF;
+//    dump_index &= 0x3FF;
   }
 }
 
 void loop() {
   // Only do stuff if not dumping data
-  if (current_state != DATA_DUMP) {
+  if (current_state != DATA_DUMP) {// && current_state != DATA_COLLECTION_COMPLETE) {
     unsigned long current_time = micros();
     if (current_time > next_sample) {
-      next_sample += sample_interval;
+      next_sample = current_time + sample_interval;
       unsigned int sample = analogRead(0);
       //This part needs to be atomic or assumption on the indexes may be broken.
       noInterrupts();
       samples[sample_index++] = (byte) (sample >> 8);
-      if (sample_index == 1023) {
-        current_state = DATA_COLLECTION_COMPLETE;
-      }
       samples[sample_index++] = (byte) sample;
       // cut off any bits at 1024 or above to cause roll over
       sample_index &= 0x3FF;
       interrupts();
-
+      if (sample_index == 0) {
+        current_state = DATA_COLLECTION_COMPLETE;
+      }
     }
-  }  
+    
+    if(current_state == DATA_COLLECTION_COMPLETE && Serial.read() > 0) {
+      dump_index = sample_index;
+      dump_end_index = (sample_index - 1) & 0x3FF;
+      for( int i = 0; i < 512; ++i) {
+        unsigned int sample = (samples[dump_index++] << 8);
+        sample |= samples[dump_index++];
+        Serial.println(sample, DEC);
+        dump_index &= 0x3FF;
+      }
+      Serial.println("Done");
+    }
+  } /*else {
+    while(dump_index != dump_end_index){
+      SPDR = samples[dump_index++];
+      dump_index &= 0x1FF;
+      while(!(SPSR & (1<<SPIF)));
+    }
+    SPDR = EOD;
+  }*/
 }
