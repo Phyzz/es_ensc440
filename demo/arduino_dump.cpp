@@ -6,8 +6,21 @@
 int main(int argc, char *argv[]){
     unsigned char rx_buf[1032];
     
-    es_SPIDEV interface = es_SPIDEV("/dev/spidev0.0", 1);
+    es_SPIDEV interface = es_SPIDEV("/dev/spidev0.0", 1, 9765562);
     interface.recieve(rx_buf, 1032, true);
+    
+    std::cout << std::hex << (int) rx_buf[0] << std::endl;
+    std::cout << std::hex << (int) rx_buf[1] << std::endl;
+    std::cout << std::hex << (int) rx_buf[2] << std::endl;
+    std::cout << "****" << std::endl;
+    std::cout << std::hex << (int) rx_buf[1024] << std::endl;
+    std::cout << std::hex << (int) rx_buf[1025] << std::endl;
+    std::cout << std::hex << (int) rx_buf[1026] << std::endl;
+    std::cout << std::hex << (int) rx_buf[1027] << std::endl;
+    std::cout << std::hex << (int) rx_buf[1028] << std::endl;
+    std::cout << std::hex << (int) rx_buf[1029] << std::endl;
+    std::cout << std::hex << (int) rx_buf[1031] << std::endl;
+    std::cout << std::hex << (int) rx_buf[1032] << std::endl;
     
     unsigned int results[516];
     for(int i = 0; i < 516; ++i) {
@@ -33,7 +46,7 @@ int main(int argc, char *argv[]){
     int highest_index = 0;
     float highest_result = 0.0;
     for (int i = 1; i < 255; ++i) {
-        float result = results[i] * results[i] + results[256+i] * results[256*i];
+        float result = fft_results[i] * fft_results[i] + fft_results[256+i] * fft_results[256+i];
         if (result > highest_result) {
             highest_result = result;
             highest_index = i;

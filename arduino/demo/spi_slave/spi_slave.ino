@@ -13,9 +13,8 @@ unsigned int sample_index = 0;
 unsigned int sample_interval = 1000; //in microseconds
 unsigned long next_sample = 0;
 
-
 volatile unsigned int dump_index;
-volatile unsigned int dump_end_index;
+volatile unsigned int dumped_bytes;
 
 enum State {DATA_COLLECTION_INCOMPLETE, DATA_COLLECTION_COMPLETE, DATA_DUMP};
 
@@ -29,23 +28,23 @@ void ss_change () {
     if(pin2 && current_state == DATA_DUMP) {
       current_state = DATA_COLLECTION_INCOMPLETE;
       sample_index = 0;
+      dump_index = 0;
     // falling edge
     } else {
       if (current_state == DATA_COLLECTION_COMPLETE) {
         // prep for a dump
         current_state = DATA_DUMP;
         SPDR = READY;
-        dump_end_index = (sample_index - 1) & 0x3FF;
-//        dump_index = sample_index;
-        dump_index = 0;
+        dump_index = sample_index;
+        dumped_bytes = 0;
       } else {
         SPDR = NOT_READY;
-//        dump_end_index = dump_index;
-        dump_index = 1023;
+        dumped_bytes = 1024;
       }
     }
-    prev_pin2 = pin2;
+
   }
+  prev_pin2 = pin2;
 }
 void setup() {
   //MISO and MOSI stay the same in Slave mode, in other words connect straight across not cross over
@@ -64,18 +63,19 @@ void setup() {
 }
 
 ISR (SPI_STC_vect) {
-  if (dump_index == 1023) {//dump_end_index) {
+  if (dumped_bytes == 1024) {
     SPDR = EOD;
   } else  {
     SPDR = samples[dump_index++];
-    // cut off any bits at 1024 or above to cause roll over
-//    dump_index &= 0x3FF;
+    ++dumped_bytes;
+    // cut off any bits over 1024 to cause roll over
+    dump_index &= 0x3FF;
   }
 }
 
 void loop() {
   // Only do stuff if not dumping data
-  if (current_state != DATA_DUMP) {// && current_state != DATA_COLLECTION_COMPLETE) {
+  if (current_state != DATA_DUMP) {
     unsigned long current_time = micros();
     if (current_time > next_sample) {
       next_sample = current_time + sample_interval;
@@ -94,7 +94,6 @@ void loop() {
     
     if(current_state == DATA_COLLECTION_COMPLETE && Serial.read() > 0) {
       dump_index = sample_index;
-      dump_end_index = (sample_index - 1) & 0x3FF;
       for( int i = 0; i < 512; ++i) {
         unsigned int sample = (samples[dump_index++] << 8);
         sample |= samples[dump_index++];
@@ -103,12 +102,5 @@ void loop() {
       }
       Serial.println("Done");
     }
-  } /*else {
-    while(dump_index != dump_end_index){
-      SPDR = samples[dump_index++];
-      dump_index &= 0x1FF;
-      while(!(SPSR & (1<<SPIF)));
-    }
-    SPDR = EOD;
-  }*/
+  } 
 }

@@ -46,5 +46,17 @@ int main(int agrc, char *argv[]) {
         std::cout << "Sample " << i << ": " << fft_result[i] << " + j(" << fft_result[256 + i] << ")\n";
     }
     
+    int highest_index = 0;
+    float highest_result = 0.0;
+    for (int i = 1; i < 255; ++i) {
+        float result = fft_result[i] * fft_result[i] + fft_result[256+i] * fft_result[256+i];
+        if (result > highest_result) {
+            highest_result = result;
+            highest_index = i;
+        }
+    }
+    
+    std::cout << std::endl << "Highest frequency is " << 1.953125f * highest_index << std::endl;
+    
     return 0;
 }
