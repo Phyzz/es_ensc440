@@ -3,6 +3,9 @@
 #include "../lib/es_SPIDEV.hpp"
 #include "../lib/ffft/FFTReal.h"
 
+
+#define SAMPLING_FREQ 1000;
+
 int main(int argc, char *argv[]){
     unsigned char rx_buf[1032];
     
@@ -52,8 +55,9 @@ int main(int argc, char *argv[]){
             highest_index = i;
         }
     }
-    
-    std::cout << std::endl << "Highest frequency is " << 1.953125f * highest_index << std::endl;
+ 
+    float freq_per_bin = SAMPLING_FREQ / 512.0; 
+    std::cout << std::endl << "Highest frequency is " << freq_per_bin * highest_index << std::endl;
     
     return 0;
 }
