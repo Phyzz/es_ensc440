@@ -4,7 +4,7 @@
 #include "../lib/ffft/FFTReal.h"
 
 
-#define SAMPLING_FREQ 1000;
+#define SAMPLING_FREQ 1000
 
 int main(int argc, char *argv[]){
     unsigned char rx_buf[1032];
