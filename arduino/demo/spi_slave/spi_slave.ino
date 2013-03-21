@@ -1,12 +1,16 @@
 #include <SPI.h>
 #include "pins_arduino.h"
 
-#define START_TX      0xFA
-#define CONTINUE_TX   0xF5
 #define EOD           0xFF //end of data
-#define ERROR         0xFE
 #define NOT_READY     0xFD
 #define READY         0xFC
+
+#ifndef cbi
+#define cbi(sfr,bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr,bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif
 
 byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
 unsigned int sample_index = 0;
@@ -47,6 +51,11 @@ void ss_change () {
   prev_pin2 = pin2;
 }
 void setup() {
+  // set ADC prescaler to 16 for max sample rate of 77 kHz
+  sbi(ADCSRA,ADPS2);
+  cbi(ADCSRA,ADPS1);
+  cbi(ADCSRA,ADPS0);
+  
   //MISO and MOSI stay the same in Slave mode, in other words connect straight across not cross over
   pinMode(MISO, OUTPUT);
   
