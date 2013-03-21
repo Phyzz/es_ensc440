@@ -3,8 +3,7 @@
 #include "../lib/es_SPIDEV.hpp"
 #include "../lib/ffft/FFTReal.h"
 
-
-#define SAMPLING_FREQ 1000
+#define SAMPLING_FREQ 40000.0
 
 int main(int argc, char *argv[]){
     unsigned char rx_buf[1032];

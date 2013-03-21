@@ -13,31 +13,32 @@
 #endif
 
 byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
-unsigned int sample_index = 0;
-unsigned int sample_interval = 1000; //in microseconds
-unsigned long next_sample = 0;
+unsigned int sample_index;
+unsigned int sample_interval = 25; //in microseconds
+unsigned long next_sample;
 
 volatile unsigned int dump_index;
 volatile unsigned int dumped_bytes;
 
-enum State {DATA_COLLECTION_INCOMPLETE, DATA_COLLECTION_COMPLETE, DATA_DUMP};
-
-volatile State current_state = DATA_COLLECTION_INCOMPLETE;
+volatile boolean dumping;
+volatile boolean ready_to_dump;
 volatile byte prev_pin2;
 
 void ss_change () {
   byte pin2 = PIND & 0x04;
   if (pin2 != prev_pin2) {
     // rising edge after a dump. rising edge after saying not ready doesn't require any changes
-    if(pin2 && current_state == DATA_DUMP) {
-      current_state = DATA_COLLECTION_INCOMPLETE;
+    if(pin2 && dumping) {
+      ready_to_dump = false;
+      dumping = false;
       sample_index = 0;
       dump_index = 0;
     // falling edge
     } else {
-      if (current_state == DATA_COLLECTION_COMPLETE) {
+      if (ready_to_dump) {
         // prep for a dump
-        current_state = DATA_DUMP;
+        dumping = true;
+        ready_to_dump = false;
         SPDR = READY;
         dump_index = sample_index;
         dumped_bytes = 0;
@@ -51,10 +52,10 @@ void ss_change () {
   prev_pin2 = pin2;
 }
 void setup() {
-  // set ADC prescaler to 16 for max sample rate of 77 kHz
-  sbi(ADCSRA,ADPS2);
-  cbi(ADCSRA,ADPS1);
-  cbi(ADCSRA,ADPS0);
+  // set ADC prescaler to 8 for max sample rate of 154 kHz
+  cbi(ADCSRA,ADPS2);
+  sbi(ADCSRA,ADPS1);
+  sbi(ADCSRA,ADPS0);
   
   //MISO and MOSI stay the same in Slave mode, in other words connect straight across not cross over
   pinMode(MISO, OUTPUT);
@@ -68,7 +69,16 @@ void setup() {
   
   //interupt 0 on pin 2, pin 2 connected to SS pin 10
   attachInterrupt(0, ss_change, CHANGE);
-  Serial.begin(9600);
+
+  sample_index = 0;
+  next_sample = 0;
+  
+  dump_index = 0;
+  dumped_bytes = 0;
+  
+  dumping = false;
+  ready_to_dump = false;
+  prev_pin2 = 1;
 }
 
 ISR (SPI_STC_vect) {
@@ -84,7 +94,7 @@ ISR (SPI_STC_vect) {
 
 void loop() {
   // Only do stuff if not dumping data
-  if (current_state != DATA_DUMP) {
+  if (!dumping) {
     unsigned long current_time = micros();
     if (current_time > next_sample) {
       next_sample = current_time + sample_interval;
@@ -96,20 +106,8 @@ void loop() {
       // cut off any bits at 1024 or above to cause roll over
       sample_index &= 0x3FF;
       interrupts();
-      if (sample_index == 0) {
-        current_state = DATA_COLLECTION_COMPLETE;
-      }
-    }
-    
-    if(current_state == DATA_COLLECTION_COMPLETE && Serial.read() > 0) {
-      dump_index = sample_index;
-      for( int i = 0; i < 512; ++i) {
-        unsigned int sample = (samples[dump_index++] << 8);
-        sample |= samples[dump_index++];
-        Serial.println(sample, DEC);
-        dump_index &= 0x3FF;
-      }
-      Serial.println("Done");
+      // ready to dump once sample_index rolls over
+      ready_to_dump |= !sample_index;
     }
   } 
 }
