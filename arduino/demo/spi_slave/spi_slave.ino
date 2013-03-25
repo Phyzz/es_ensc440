@@ -12,10 +12,10 @@
 #define sbi(sfr,bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
-unsigned int sample_index;
-unsigned int sample_interval = 16; //in microseconds
-unsigned long next_sample;
+volatile byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
+volatile unsigned int sample_index;
+//unsigned int sample_interval = 16; //in microseconds
+//unsigned long next_sample;
 
 volatile unsigned int dump_index;
 volatile unsigned int dumped_bytes;
@@ -31,12 +31,14 @@ void ss_change () {
       dumping = false;
       sample_index = 0;
       dump_index = 0;
+      TIMSK1 |= ( 1<< OCIE1A);
     // falling edge
     } else {
         dumping = true;
         SPDR = READY;
         dump_index = sample_index;
         dumped_bytes = 0;
+        TIMSK1 &= ~( 1<< OCIE1A);
     }
 
   }
@@ -57,12 +59,24 @@ void setup() {
   
   // enable SPI interrupts
   SPCR |= _BV(SPIE);
+
+  cli();
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1  = 0;
+  OCR1A = 177;
+  
+  TCCR1B |= (1 << WGM12);
+  TCCR1B |= (1 << CS10);
+  
+  TIMSK1 |= ( 1<< OCIE1A);
+  sei();
   
   //interupt 0 on pin 2, pin 2 must be externally connected to SS pin 10
   attachInterrupt(0, ss_change, CHANGE);
 
   sample_index = 0;
-  next_sample = 0;
+//  next_sample = 0;
   
   dump_index = 0;
   dumped_bytes = 0;
@@ -83,16 +97,13 @@ ISR (SPI_STC_vect) {
   }
 }
 
+ISR(TIMER1_COMPA_vect) {
+  unsigned int sample = analogRead(0);
+  samples[sample_index++] = (byte) (sample >> 8);
+  samples[sample_index++] = (byte) sample;
+  // cut off any bits at 1024 or above to cause roll over
+  sample_index &= 0x3FF;
+}
+
 void loop() {
-  while(1){
-    unsigned long current_time = micros();
-    if (current_time > next_sample) {
-      next_sample += sample_interval;// = current_time + sample_interval;
-      unsigned int sample = analogRead(0);
-      samples[sample_index++] = (byte) (sample >> 8);
-      samples[sample_index++] = (byte) sample;
-      // cut off any bits at 1024 or above to cause roll over
-      sample_index &= 0x3FF;
-    }
-  } 
 }
