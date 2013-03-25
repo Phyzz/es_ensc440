@@ -14,14 +14,13 @@
 
 byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
 unsigned int sample_index;
-unsigned int sample_interval = 25; //in microseconds
+unsigned int sample_interval = 16; //in microseconds
 unsigned long next_sample;
 
 volatile unsigned int dump_index;
 volatile unsigned int dumped_bytes;
 
 volatile boolean dumping;
-volatile boolean ready_to_dump;
 volatile byte prev_pin2;
 
 void ss_change () {
@@ -29,33 +28,25 @@ void ss_change () {
   if (pin2 != prev_pin2) {
     // rising edge after a dump. rising edge after saying not ready doesn't require any changes
     if(pin2 && dumping) {
-      ready_to_dump = false;
       dumping = false;
       sample_index = 0;
       dump_index = 0;
     // falling edge
     } else {
-      if (ready_to_dump) {
-        // prep for a dump
         dumping = true;
-        ready_to_dump = false;
         SPDR = READY;
         dump_index = sample_index;
         dumped_bytes = 0;
-      } else {
-        SPDR = NOT_READY;
-        dumped_bytes = 1024;
-      }
     }
 
   }
   prev_pin2 = pin2;
 }
 void setup() {
-  // set ADC prescaler to 8 for max sample rate of 154 kHz
+  // set ADC prescaler to 4 for max sample rate of 308 kHz
   cbi(ADCSRA,ADPS2);
   sbi(ADCSRA,ADPS1);
-  sbi(ADCSRA,ADPS0);
+  cbi(ADCSRA,ADPS0);
   
   //MISO and MOSI stay the same in Slave mode, in other words connect straight across not cross over
   pinMode(MISO, OUTPUT);
@@ -67,7 +58,7 @@ void setup() {
   // enable SPI interrupts
   SPCR |= _BV(SPIE);
   
-  //interupt 0 on pin 2, pin 2 connected to SS pin 10
+  //interupt 0 on pin 2, pin 2 must be externally connected to SS pin 10
   attachInterrupt(0, ss_change, CHANGE);
 
   sample_index = 0;
@@ -77,7 +68,7 @@ void setup() {
   dumped_bytes = 0;
   
   dumping = false;
-  ready_to_dump = false;
+//  ready_to_dump = false;
   prev_pin2 = 1;
 }
 
@@ -93,21 +84,15 @@ ISR (SPI_STC_vect) {
 }
 
 void loop() {
-  // Only do stuff if not dumping data
-  if (!dumping) {
+  while(1){
     unsigned long current_time = micros();
     if (current_time > next_sample) {
-      next_sample = current_time + sample_interval;
+      next_sample += sample_interval;// = current_time + sample_interval;
       unsigned int sample = analogRead(0);
-      //This part needs to be atomic or assumption on the indexes may be broken.
-      noInterrupts();
       samples[sample_index++] = (byte) (sample >> 8);
       samples[sample_index++] = (byte) sample;
       // cut off any bits at 1024 or above to cause roll over
       sample_index &= 0x3FF;
-      interrupts();
-      // ready to dump once sample_index rolls over
-      ready_to_dump |= !sample_index;
     }
   } 
 }

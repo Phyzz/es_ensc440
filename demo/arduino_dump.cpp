@@ -3,12 +3,15 @@
 #include "../lib/es_SPIDEV.hpp"
 #include "../lib/ffft/FFTReal.h"
 
-#define SAMPLING_FREQ 40000.0
+#define SAMPLING_FREQ 62500.0
 
 int main(int argc, char *argv[]){
     unsigned char rx_buf[1032];
     
     es_SPIDEV interface = es_SPIDEV("/dev/spidev0.0", 1, 9765562);
+    
+    sleep(1);
+    
     interface.recieve(rx_buf, 1032, true);
     
     std::cout << std::hex << (int) rx_buf[0] << std::endl;
