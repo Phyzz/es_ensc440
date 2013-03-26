@@ -3,7 +3,7 @@
 #include "../lib/es_SPIDEV.hpp"
 #include "../lib/ffft/FFTReal.h"
 
-#define SAMPLING_FREQ 77000.0
+#define SAMPLING_FREQ 100000.0
 
 int main(int argc, char *argv[]){
     unsigned char rx_buf[1032];
@@ -29,8 +29,8 @@ int main(int argc, char *argv[]){
     
     unsigned int results[516];
     for(int i = 0; i < 516; ++i) {
-        results[i] = (rx_buf[i*2 + 1] << 8);
-        results[i] |= rx_buf[i*2 + 2];
+        results[i] = (rx_buf[i*2 + 2] << 8);
+        results[i] |= rx_buf[i*2 + 1];
     }
     
     for (int i = 0; i < 512; i += 16) {

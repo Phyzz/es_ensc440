@@ -14,8 +14,6 @@
 
 volatile byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
 volatile unsigned int sample_index;
-//unsigned int sample_interval = 16; //in microseconds
-//unsigned long next_sample;
 
 volatile unsigned int dump_index;
 volatile unsigned int dumped_bytes;
@@ -31,25 +29,51 @@ void ss_change () {
       dumping = false;
       sample_index = 0;
       dump_index = 0;
-      TIMSK1 |= ( 1<< OCIE1A);
+      
+      // re-enable data collection timer
+      sbi(TIMSK1,OCIE1A);
     // falling edge
     } else {
         dumping = true;
         SPDR = READY;
         dump_index = sample_index;
         dumped_bytes = 0;
-        TIMSK1 &= ~( 1<< OCIE1A);
+        
+        //disable data collection timer
+        cbi(TIMSK1,OCIE1A);
     }
 
   }
   prev_pin2 = pin2;
 }
 void setup() {
+  cli();
+  
+  // ADC setup
   // set ADC prescaler to 4 for max sample rate of 308 kHz
   cbi(ADCSRA,ADPS2);
   sbi(ADCSRA,ADPS1);
   cbi(ADCSRA,ADPS0);
   
+  // Disable ADC conversion interrupt
+  cbi(ADCSRA,ADIE);
+  // clear auto-trigger/freerunning
+  cbi(ADCSRA, ADATE);
+  
+  //set 5V internal ref
+  cbi(ADMUX,REFS1);
+  sbi(ADMUX,REFS0);
+  
+  //set right aligned data
+  cbi(ADMUX,ADLAR);
+  
+  //choose ADC pin 0;
+  cbi(ADMUX,MUX3);
+  cbi(ADMUX,MUX2);
+  cbi(ADMUX,MUX1);
+  cbi(ADMUX,MUX0);
+  
+  //SPI setup
   //MISO and MOSI stay the same in Slave mode, in other words connect straight across not cross over
   pinMode(MISO, OUTPUT);
   
@@ -60,23 +84,24 @@ void setup() {
   // enable SPI interrupts
   SPCR |= _BV(SPIE);
 
-  cli();
+
+  // set up the sample timer
   TCCR1A = 0;
   TCCR1B = 0;
   TCNT1  = 0;
-  OCR1A = 177;
+  OCR1A = 159;
   
-  TCCR1B |= (1 << WGM12);
-  TCCR1B |= (1 << CS10);
+  sbi(TCCR1B,WGM12);
+  sbi(TCCR1B,CS10);
   
-  TIMSK1 |= ( 1<< OCIE1A);
-  sei();
+  sbi(TIMSK1,OCIE1A);
   
   //interupt 0 on pin 2, pin 2 must be externally connected to SS pin 10
   attachInterrupt(0, ss_change, CHANGE);
 
+
+  // initialize all constants
   sample_index = 0;
-//  next_sample = 0;
   
   dump_index = 0;
   dumped_bytes = 0;
@@ -84,6 +109,8 @@ void setup() {
   dumping = false;
 //  ready_to_dump = false;
   prev_pin2 = 1;
+  
+  sei();
 }
 
 ISR (SPI_STC_vect) {
@@ -98,9 +125,15 @@ ISR (SPI_STC_vect) {
 }
 
 ISR(TIMER1_COMPA_vect) {
-  unsigned int sample = analogRead(0);
-  samples[sample_index++] = (byte) (sample >> 8);
-  samples[sample_index++] = (byte) sample;
+
+  //start an ADC conversion
+  sbi(ADCSRA, ADSC);
+  //busy wait until the conversion is done
+  while(bit_is_set(ADCSRA, ADSC));
+  
+  samples[sample_index++] = ADCL;
+  samples[sample_index++] = ADCH;
+
   // cut off any bits at 1024 or above to cause roll over
   sample_index &= 0x3FF;
 }
