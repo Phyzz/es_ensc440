@@ -8,7 +8,7 @@
 int main(int argc, char *argv[]){
     unsigned char rx_buf[1032];
     
-    es_SPIDEV interface = es_SPIDEV("/dev/spidev0.0", 1, 9765562);
+    es_SPIDEV interface = es_SPIDEV("/dev/spidev0.0", 1, 970000);
     
     sleep(1);
     
