@@ -4,61 +4,62 @@
 #include "../lib/ffft/FFTReal.h"
 
 #define SAMPLING_FREQ 84210.52631578947
+#define SAMPLE_NUMBER 1024
 
 int main(int argc, char *argv[]){
-    unsigned char rx_buf[1032];
+    unsigned char rx_buf[SAMPLE_NUMBER+4];
     
     es_SPIDEV interface = es_SPIDEV("/dev/spidev0.0", 1, 970000);
     
     sleep(1);
     
-    interface.recieve(rx_buf, 1032, true);
+    interface.recieve(rx_buf, SAMPLE_NUMBER+4, true);
     
     std::cout << std::hex << (int) rx_buf[0] << std::endl;
     std::cout << std::hex << (int) rx_buf[1] << std::endl;
     std::cout << std::hex << (int) rx_buf[2] << std::endl;
     std::cout << "****" << std::endl;
-    std::cout << std::hex << (int) rx_buf[1024] << std::endl;
-    std::cout << std::hex << (int) rx_buf[1025] << std::endl;
-    std::cout << std::hex << (int) rx_buf[1026] << std::endl;
-    std::cout << std::hex << (int) rx_buf[1027] << std::endl;
-    std::cout << std::hex << (int) rx_buf[1028] << std::endl;
-    std::cout << std::hex << (int) rx_buf[1029] << std::endl;
-    std::cout << std::hex << (int) rx_buf[1031] << std::endl;
-    std::cout << std::hex << (int) rx_buf[1032] << std::endl;
+    std::cout << std::hex << (int) rx_buf[SAMPLE_NUMBER-4] << std::endl;
+    std::cout << std::hex << (int) rx_buf[SAMPLE_NUMBER-3] << std::endl;
+    std::cout << std::hex << (int) rx_buf[SAMPLE_NUMBER-2] << std::endl;
+    std::cout << std::hex << (int) rx_buf[SAMPLE_NUMBER-1] << std::endl;
+    std::cout << std::hex << (int) rx_buf[SAMPLE_NUMBER+0] << std::endl;
+    std::cout << std::hex << (int) rx_buf[SAMPLE_NUMBER+1] << std::endl;
+    std::cout << std::hex << (int) rx_buf[SAMPLE_NUMBER+2] << std::endl;
+    std::cout << std::hex << (int) rx_buf[SAMPLE_NUMBER+3] << std::endl;
     
-    unsigned int results[516];
-    for(int i = 0; i < 516; ++i) {
+    unsigned int results[SAMPLE_NUMBER/2];
+    for(int i = 0; i < SAMPLE_NUMBER/2; ++i) {
         results[i] = (rx_buf[i*2 + 2] << 8);
         results[i] |= rx_buf[i*2 + 1];
     }
     
-    for (int i = 0; i < 512; i += 16) {
-        for (int j = 0; j < 16 && i +j < 515; ++j) {
+    for (int i = 0; i < SAMPLE_NUMBER/2; i += 16) {
+        for (int j = 0; j < 16 && i +j < SAMPLE_NUMBER/2; ++j) {
             std::cout << std::hex << results[i + j] << "\t";
         }
         std::cout << std::endl;
     }
     
-    float samples[512];
-    for (int i = 0; i < 512; ++i) {
+    float samples[SAMPLE_NUMBER/2];
+    for (int i = 0; i < SAMPLE_NUMBER/2; ++i) {
         samples[i] = (float) results[i];
     }
-    float fft_results[512];
-    ffft::FFTReal <float> fft_object (512);
+    float fft_results[SAMPLE_NUMBER/2];
+    ffft::FFTReal <float> fft_object (SAMPLE_NUMBER/2);
     fft_object.do_fft(fft_results, samples);
     
     int highest_index = 0;
     float highest_result = 0.0;
-    for (int i = 1; i < 255; ++i) {
-        float result = fft_results[i] * fft_results[i] + fft_results[256+i] * fft_results[256+i];
+    for (int i = 1; i < SAMPLE_NUMBER/4-1; ++i) {
+        float result = fft_results[i] * fft_results[i] + fft_results[SAMPLE_NUMBER/2+i] * fft_results[SAMPLE_NUMBER/2+i];
         if (result > highest_result) {
             highest_result = result;
             highest_index = i;
         }
     }
  
-    float freq_per_bin = SAMPLING_FREQ / 512.0; 
+    float freq_per_bin = SAMPLING_FREQ / (SAMPLE_NUMBER/2); 
     std::cout << std::endl << "Highest frequency is " << freq_per_bin * highest_index << " at power level " << highest_result << std::endl;
     
     return 0;
