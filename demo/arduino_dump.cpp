@@ -3,7 +3,7 @@
 #include "../lib/es_SPIDEV.hpp"
 #include "../lib/ffft/FFTReal.h"
 
-#define SAMPLING_FREQ 100000.0
+#define SAMPLING_FREQ 84210.52631578947
 
 int main(int argc, char *argv[]){
     unsigned char rx_buf[1032];
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
     }
  
     float freq_per_bin = SAMPLING_FREQ / 512.0; 
-    std::cout << std::endl << "Highest frequency is " << freq_per_bin * highest_index << std::endl;
+    std::cout << std::endl << "Highest frequency is " << freq_per_bin * highest_index << " at power level " << highest_result << std::endl;
     
     return 0;
 }

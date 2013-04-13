@@ -89,7 +89,9 @@ void setup() {
   TCCR1A = 0;
   TCCR1B = 0;
   TCNT1  = 0;
-  OCR1A = 159;
+  
+  //sampling at approx 84,210.5 Hz
+  OCR1A = 190;
   
   sbi(TCCR1B,WGM12);
   sbi(TCCR1B,CS10);
