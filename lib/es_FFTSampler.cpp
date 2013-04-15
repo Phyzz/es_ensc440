@@ -1,6 +1,6 @@
 #include "es_FFTSampler.hpp"
 
-es_FFTSampler::es_FFTSampler(string device_path) : interface(device_path, 1, 970000) {
+es_FFTSampler::es_FFTSampler(string device_path) : interface(device_path, 1, 970000)/*, fft_obj ((void*) new ffft::FFTRealFixLen <10>)*/ {
 }
 
 void es_FFTSampler::takeSample() {
@@ -14,14 +14,15 @@ void es_FFTSampler::takeSample() {
         result |= rx_buf[i*2 + 1];
         samples[i] = (float) result;
     }
-    ffft::FFTReal <float> fft_object (SAMPLE_NUMBER);
-    fft_object.do_fft(this->fft_results, samples);
+    float fft_results[SAMPLE_NUMBER/2];
+    ffft::FFTRealFixLen<10> fft_object;
+    fft_object.do_fft(fft_results, samples);
     
     unsigned int highest_index = 0;
     float highest_result = 0.0;
     this->average_power = 0;
     for (int i = 1; i < SAMPLE_NUMBER/4-1; ++i) {
-        float result = sqrt(this->fft_results[i] * this->fft_results[i] + this->fft_results[SAMPLE_NUMBER/4+i] * this->fft_results[SAMPLE_NUMBER/4+i]);
+        float result = sqrt(fft_results[i] * fft_results[i] + fft_results[SAMPLE_NUMBER/4+i] * fft_results[SAMPLE_NUMBER/4+i]);
         this->average_power += result;
         if (i >= MIN_BIN && i <= MAX_BIN) {
             if (result > THRESHOLD) {
@@ -53,5 +54,6 @@ int es_FFTSampler::getAveragePower() {
 }
 
 es_FFTSampler::~es_FFTSampler() {
+//    delete (ffft::FFTRealFixLen <10>) fft_obj;
 }
 

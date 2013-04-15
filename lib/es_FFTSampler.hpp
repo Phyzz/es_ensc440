@@ -4,6 +4,7 @@
 #include "es_SPI_EX.hpp"
 #include "es_SPIDEV.hpp"
 #include "ffft/FFTReal.h"
+#include "ffft/FFTRealFixLen.h"
 #include <math.h>
 #include <vector>
 
@@ -35,8 +36,9 @@ class es_FFTSampler {
         
     private:
         es_SPIDEV interface;
+        void * fft_obj;
+        //ffft::FFTRealFixLen<10> fft_object;
         unsigned char rx_buf[SAMPLE_NUMBER+1];
-        float fft_results[SAMPLE_NUMBER/2];
         unsigned int highest_freq;
         float highest_freq_power;
         float average_power;
