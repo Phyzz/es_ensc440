@@ -1,3 +1,6 @@
+#ifndef ES_3DVECT
+#define ES_3DVECT
+
 #include <iostream>
 
 class es_3dVect {
@@ -24,3 +27,6 @@ class es_3dVect {
 };
 
 std::ostream & operator<<(std::ostream & os, const es_3dVect &rhs);
+
+#endif
+
