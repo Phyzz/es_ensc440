@@ -36,8 +36,7 @@ class es_FFTSampler {
         
     private:
         es_SPIDEV interface;
-        void * fft_obj;
-        //ffft::FFTRealFixLen<10> fft_object;
+        ffft::FFTRealFixLen<9> *fft_object;
         unsigned char rx_buf[SAMPLE_NUMBER+1];
         unsigned int highest_freq;
         float highest_freq_power;

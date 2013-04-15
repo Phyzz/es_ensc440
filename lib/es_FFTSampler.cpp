@@ -1,6 +1,7 @@
 #include "es_FFTSampler.hpp"
 
-es_FFTSampler::es_FFTSampler(string device_path) : interface(device_path, 1, 970000)/*, fft_obj ((void*) new ffft::FFTRealFixLen <10>)*/ {
+es_FFTSampler::es_FFTSampler(string device_path) : interface(device_path, 1, 970000) {
+    this->fft_object = new ffft::FFTRealFixLen <9>;
 }
 
 void es_FFTSampler::takeSample() {
@@ -15,8 +16,7 @@ void es_FFTSampler::takeSample() {
         samples[i] = (float) result;
     }
     float fft_results[SAMPLE_NUMBER/2];
-    ffft::FFTRealFixLen<10> fft_object;
-    fft_object.do_fft(fft_results, samples);
+    this->fft_object->do_fft(fft_results, samples);
     
     unsigned int highest_index = 0;
     float highest_result = 0.0;
@@ -26,7 +26,7 @@ void es_FFTSampler::takeSample() {
         this->average_power += result;
         if (i >= MIN_BIN && i <= MAX_BIN) {
             if (result > THRESHOLD) {
-                this->freqs_above_thresh.push_back({(int) (highest_index*FREQ_PER_BIN + 0.5), (int) result});
+                this->freqs_above_thresh.push_back({(int) (i*FREQ_PER_BIN + 0.5), (int) result});
             }
             if (result > highest_result) {
                 highest_result = result;
@@ -36,6 +36,7 @@ void es_FFTSampler::takeSample() {
     }
     this->average_power = average_power / (SAMPLE_NUMBER/4-1);
     this->highest_freq = (int) (highest_index*FREQ_PER_BIN + 0.5);
+    this->highest_freq_power = highest_result;
 }
 int es_FFTSampler::getStrongestFreq() {
     return this->highest_freq;
@@ -54,6 +55,6 @@ int es_FFTSampler::getAveragePower() {
 }
 
 es_FFTSampler::~es_FFTSampler() {
-//    delete (ffft::FFTRealFixLen <10>) fft_obj;
+    delete this->fft_object;
 }
 
