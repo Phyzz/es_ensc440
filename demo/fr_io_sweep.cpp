@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
             std::cout << level - 1 << " : " << last_freq << "\t";
             std::cout << level << " : " << highest_freq << std::endl;
         } else if (highest_freq < last_freq) {
-            std::cout << "Reversion at " << level " : " << highest_freq << std::endl;
+            std::cout << "Reversion at " << level << " : " << highest_freq << std::endl;
         }
         last_freq = highest_freq;
     }
