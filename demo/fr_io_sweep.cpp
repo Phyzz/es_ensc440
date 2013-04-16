@@ -1,6 +1,7 @@
 #include "../lib/es_DAC.hpp"
 #include "../lib/es_FFTSampler.hpp"
 #include <iostream>
+#include <time.h>
 
 int main(int argc, char *argv[]){
     
@@ -10,11 +11,15 @@ int main(int argc, char *argv[]){
     //turn off channel b
     dac.setChannelLevel(CH_B, 0, false, true);
     
+    timespec interval;
+    interval.tv_sec = 0;
+    interval.tv_nsec = 3080000;
+    
     int last_freq = 0 ;
-    for (int level = 380; level < 580; level += 1) {
+    for (int level = 330; level < 510; level += 1) {
         dac.setChannelLevel(CH_A, (int) level, false, false);
     
-        sleep(1);
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
     
         sampler.takeSample();
         int highest_freq = sampler.getStrongestFreq();
