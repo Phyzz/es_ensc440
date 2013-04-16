@@ -17,10 +17,10 @@ es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0");
 es_DAC dac = es_DAC("/dev/spidev0.1");
 
 std::map<int, std::vector<int> > transmit_map = {
-    {BEACON0, {394, 413}},
-    {BEACON1, {495, 455}},
-    {BEACON2, {475, 494}},
-    {BEACON3, {513, 532}},
+    {BEACON0, {392, 410}},
+    {BEACON1, {428, 444}},
+    {BEACON2, {462, 480}},
+    {BEACON3, {497, 515}},
 };
 
 std::map<int, std::vector<int> > reciever_map = {
