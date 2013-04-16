@@ -13,7 +13,7 @@
 #define BEACON2 2
 #define BEACON3 3
 
-es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0");
+es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 116, 123);
 es_DAC dac = es_DAC("/dev/spidev0.1");
 
 std::map<int, std::vector<int> > transmit_map = {

@@ -5,7 +5,7 @@
 
 int main(int argc, char *argv[]){
     
-    es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0");
+    es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 114, 125);
     
     es_DAC dac = es_DAC("/dev/spidev0.1");
     //turn off channel b
@@ -15,8 +15,9 @@ int main(int argc, char *argv[]){
     interval.tv_sec = 0;
     interval.tv_nsec = 3080000;
     
+    sleep(1);
     int last_freq = 0 ;
-    for (int level = 330; level < 510; level += 1) {
+    for (int level = 330; level < 510; ++level) {
         dac.setChannelLevel(CH_A, (int) level, false, false);
     
         clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
