@@ -25,15 +25,20 @@ void es_FFTSampler::takeSample() {
         float result = sqrt(fft_results[i] * fft_results[i] + fft_results[SAMPLE_NUMBER/4+i] * fft_results[SAMPLE_NUMBER/4+i]);
         this->average_power += result;
         if (i >= MIN_BIN && i <= MAX_BIN) {
-            if (result > THRESHOLD) {
-                this->freqs_above_thresh.push_back({(int) (i*FREQ_PER_BIN + 0.5), (int) result});
-            }
             if (result > highest_result) {
                 highest_result = result;
                 highest_index = i;
             }
         }
     }
+    int threshold = (int) (average_power * THRESHOLD_MULTIPLIER);
+    for (int i = MIN_BIN; i < MAX_BIN; ++i) {
+        float result = sqrt(fft_results[i] * fft_results[i] + fft_results[SAMPLE_NUMBER/4+i] * fft_results[SAMPLE_NUMBER/4+i]);
+        if (result > threshold) {
+            this->freqs_above_thresh.push_back({(int) (i*FREQ_PER_BIN + 0.5), (int) result});
+        }
+    }
+    
     this->average_power = average_power / (SAMPLE_NUMBER/4-1);
     this->highest_freq = (int) (highest_index*FREQ_PER_BIN + 0.5);
     this->highest_freq_power = highest_result;
