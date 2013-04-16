@@ -1,7 +1,7 @@
 #include "es_FFTSampler.hpp"
 
 es_FFTSampler::es_FFTSampler(string device_path) : interface(device_path, 1, 970000) {
-    this->fft_object = new ffft::FFTRealFixLen <9>;
+    this->fft_object = new ffft::FFTRealFixLen <8>;
 }
 
 void es_FFTSampler::takeSample() {

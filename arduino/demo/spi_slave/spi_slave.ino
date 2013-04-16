@@ -12,7 +12,7 @@
 #define sbi(sfr,bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-volatile byte samples[1024] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 512 samples
+volatile byte samples[512] = {}; //each sample is 10 bits, with no packing 2 bytes/sample so this is 256 samples
 volatile unsigned int sample_index;
 
 volatile unsigned int dump_index;
@@ -116,13 +116,13 @@ void setup() {
 }
 
 ISR (SPI_STC_vect) {
-  if (dumped_bytes == 1024) {
+  if (dumped_bytes == 512) {
     SPDR = EOD;
   } else  {
     SPDR = samples[dump_index++];
     ++dumped_bytes;
-    // cut off any bits over 1024 to cause roll over
-    dump_index &= 0x3FF;
+    // cut off any bits over 512 to cause roll over
+    dump_index &= 0x1FF;
   }
 }
 
@@ -136,8 +136,8 @@ ISR(TIMER1_COMPA_vect) {
   samples[sample_index++] = ADCL;
   samples[sample_index++] = ADCH;
 
-  // cut off any bits at 1024 or above to cause roll over
-  sample_index &= 0x3FF;
+  // cut off any bits at 512 or above to cause roll over
+  sample_index &= 0x1FF;
 }
 
 void loop() {

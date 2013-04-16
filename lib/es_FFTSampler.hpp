@@ -9,12 +9,12 @@
 #include <vector>
 
 #define SAMPLING_FREQ 84210.52631578947
-#define SAMPLE_NUMBER 1024
+#define SAMPLE_NUMBER 512
 #define THRESHOLD 30000
 #define FREQ_PER_BIN (SAMPLING_FREQ / (SAMPLE_NUMBER/2))
 
-#define MIN_BIN 232
-#define MAX_BIN 247
+#define MIN_BIN 100
+#define MAX_BIN 217
 
 struct FreqPower {
     int frequency;
@@ -36,7 +36,7 @@ class es_FFTSampler {
         
     private:
         es_SPIDEV interface;
-        ffft::FFTRealFixLen<9> *fft_object;
+        ffft::FFTRealFixLen<8> *fft_object;
         unsigned char rx_buf[SAMPLE_NUMBER+1];
         unsigned int highest_freq;
         float highest_freq_power;
