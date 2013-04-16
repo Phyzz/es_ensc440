@@ -62,13 +62,14 @@ int main(int argc, char *argv[]){
     
     for (int i = BEACON0; i <= BEACON3; ++i) {
         for (int j = 0; j <= 1 ; ++j) {
-            std::cout << "Sending " << j << " from beacon " << i << " using level " << transmit_map[i][j] std::endl;
+            std::cout << "Sending " << j << " from beacon " << i << " using level " << transmit_map[i][j] << std::endl;
             send_message(i, j);
             sleep(1);
             std::vector<std::vector<int> > message = recieve_message();
             for (std::vector<std::vector<int> >::iterator it = message.begin(); it != message.end() ; ++it) {
                 std::cout << "Recieved " << (*it)[1] << " from beacon " << (*it)[0] << std::endl;
             }
+            std::cout << std::endl;
         }
     }
     
