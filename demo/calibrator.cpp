@@ -8,7 +8,7 @@
 
 int main(int argc, char *argv[]){
     
-    es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 114, 125);
+    es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 114, 127);
     
     es_DAC dac = es_DAC("/dev/spidev0.1");
     //turn off channel b
@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
     
     timespec interval;
     interval.tv_sec = 0;
-    interval.tv_nsec = 3080000;
+    interval.tv_nsec = 6000000;
     
     std::set<int> frequencies;
     std::map<int, std::vector<std::vector<int> > > raw_vals;
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
     sleep(1);
     for (int i = 0; i < 20; ++i) {
         int last_freq = 0 ;
-        for (int level = 330; level < 510; ++level) {
+        for (int level = 330; level < 520; ++level) {
             dac.setChannelLevel(CH_A, (int) level, false, false);
         
             clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
@@ -35,8 +35,15 @@ int main(int argc, char *argv[]){
             int highest_freq = sampler.getStrongestFreq();
             if(highest_freq > last_freq) {
                 frequencies.insert(last_freq);
+                while (raw_vals[last_freq].size() <= i) {
+                    raw_vals[last_freq].push_back({0,0});
+                }
+                frequencies.insert(highest_freq);
+                while s(raw_vals[highest_freq].size() <= i) {
+                    raw_vals[highest_freq].push_back({0,0});
+                }
                 raw_vals[last_freq][i][1] = level-1;
-                raw_vals[highest_freq][i][0] = level-1;
+                raw_vals[highest_freq][i][0] = level;
             }
             last_freq = highest_freq;
         }
