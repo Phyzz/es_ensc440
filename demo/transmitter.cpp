@@ -67,21 +67,24 @@ void * reciever_fcn(void *ptr) {
             char byte = 0;
             int i = 0;
             for (std::vector<std::vector<int> >::iterator it = message.begin(); it != message.end(); ++ it) {
+                byte <<= 1;
+                byte = (*it)[1];
+                
                 if( ++i >= 8) {
                     bla.append(&byte);
                     byte = 0;
                     i = 0;
                 }
-                byte << 1;
-                byte = (*it)[1];
                 
                 /*pthread_mutex_lock ( &cout_mutex );
                 std::cout << "Recieved " << (*it)[1] << " from beacon " << (*it)[0] << std::endl;
                 pthread_mutex_unlock ( &cout_mutex );*/
             }
-            pthread_mutex_lock ( &cout_mutex );
-            std::cout << "Recieved " << bla << std::endl;
-            pthread_mutex_unlock ( &cout_mutex );
+            if(bla.size() != 0) {
+                pthread_mutex_lock ( &cout_mutex );
+                std::cout << "Recieved " << bla << std::endl;
+                pthread_mutex_unlock ( &cout_mutex );
+            }
             message.clear();
         } else {
             for (std::vector<std::vector<int> >::iterator it = bit.begin(); it != bit.end() ; ++it) {
@@ -101,18 +104,21 @@ int main(int argc, char *argv[]){
     pthread_create(&thread2, NULL, &reciever_fcn, NULL);
     
     std::cin.tie(static_cast<std::ostream*>(0));
-    std::string input = "";
-    getline(std::cin, input);
-    for (std::string::iterator it = input.begin(); it != input.end(); ++it) {
-        char byte = *it;
-        for( int i = 0; i < 8; ++i ) {
-            send_message(0, byte & 0x80);
-            byte = byte << 1;
-            clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
+    while(1) {
+        std::string input = "";
+        getline(std::cin, input);
+        for (std::string::iterator it = input.begin(); it != input.end(); ++it) {
+            char byte = *it;
+            for( int i = 0; i < 8; ++i ) {
+                char bit_to_send = (byte & 0x80) >> 7;
+                send_message(0, bit_to_send);
+                byte >>= 1;
+                clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
+            }
         }
+        
+        dac.setChannelLevel(CH_A, 0, false, false);
     }
-    
-    dac.setChannelLevel(CH_A, 0, false, false);
     sleep(1);
     
     return 0;
