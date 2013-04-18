@@ -37,6 +37,12 @@ std::map<int, std::vector<int> > reciever_map = {
     {40461, {BEACON3, 1}},
 };
 
+void add_timespec(timespec* tp, long nanos) {
+    long addition = tp->tv_nsec + nanos;
+    tp->tv_nsec = addition % 1000000000;
+    tp->tv_sec += addition / 1000000000;
+}
+
 void send_message(int beacon, unsigned short bit) {
     assert(bit <= 1);
     assert(beacon < 4);
@@ -54,13 +60,13 @@ std::vector<std::vector<int> > recieve_message() {
 }
 
 void * reciever_fcn(void *ptr) {
-    timespec interval;
-    interval.tv_sec = 0;
-    interval.tv_nsec = 7600000;
+    timespec next_sample;
+    clock_gettime(CLOCK_MONOTONIC, &next_sample);
     
     std::vector<std::vector<int> > message;
     while(1){
-        clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
+        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_sample, NULL);
+        add_timespec(&next_sample, 7800000);
         std::vector<std::vector<int> > bit = recieve_message();
         if(bit.size() == 0) {
             std::string bla;
@@ -94,12 +100,7 @@ void * reciever_fcn(void *ptr) {
     }
 }
 
-int main(int argc, char *argv[]){
-    
-    timespec interval;
-    interval.tv_sec = 0;
-    interval.tv_nsec = 2*7600000;
-    
+int main(int argc, char *argv[]){  
     pthread_t thread2;
     pthread_create(&thread2, NULL, &reciever_fcn, NULL);
     
@@ -107,13 +108,16 @@ int main(int argc, char *argv[]){
     while(1) {
         std::string input = "";
         getline(std::cin, input);
+        timespec next_send;
+        clock_gettime(CLOCK_MONOTONIC, &next_send);
         for (std::string::iterator it = input.begin(); it != input.end(); ++it) {
             char byte = *it;
             for( int i = 0; i < 8; ++i ) {
                 char bit_to_send = (byte & 0x80) >> 7;
                 send_message(0, bit_to_send);
                 byte >>= 1;
-                clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
+                clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_send, NULL);
+                add_timespec(&next_send, 2*7800000);
             }
         }
         
