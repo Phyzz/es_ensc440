@@ -13,9 +13,6 @@
 #define THRESHOLD_MULTIPLIER 30
 #define FREQ_PER_BIN (SAMPLING_FREQ / (SAMPLE_NUMBER/2))
 
-//#define MIN_BIN 100
-//#define MAX_BIN 127
-
 struct FreqPower {
     int frequency;
     int power;
@@ -24,7 +21,7 @@ struct FreqPower {
 class es_FFTSampler {
 
     public:
-        es_FFTSampler(string device_path, int min_bin = 0, int max_bin = (SAMPLE_NUMBER/4 -1));
+        es_FFTSampler(string device_path, int min_bin = 1, int max_bin = (SAMPLE_NUMBER/4 -1));
         
         void takeSample();
         int getStrongestFreq();

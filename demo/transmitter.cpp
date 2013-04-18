@@ -4,6 +4,7 @@
 #include <math.h>
 #include <time.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "../lib/es_DAC.hpp"
 #include "../lib/es_FFTSampler.hpp"
@@ -12,6 +13,8 @@
 #define BEACON1 1
 #define BEACON2 2
 #define BEACON3 3
+
+pthread_mutex_t cout_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 116, 123);
 es_DAC dac = es_DAC("/dev/spidev0.1");
@@ -50,22 +53,39 @@ std::vector<std::vector<int> > recieve_message() {
     return ret;
 }
 
+void * reciever_fcn(void *ptr) {
+    timespec interval;
+    interval.tv_sec = 0;
+    interval.tv_nsec = 3040000;
+    
+    while(1){
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
+        std::vector<std::vector<int> > message = recieve_message();
+        for (std::vector<std::vector<int> >::iterator it = message.begin(); it != message.end() ; ++it) {
+            pthread_mutex_lock ( &cout_mutex );
+            std::cout << "Recieved " << (*it)[1] << " from beacon " << (*it)[0] << std::endl;
+            pthread_mutex_unlock ( &cout_mutex );    
+        }
+    }
+}
+
 int main(int argc, char *argv[]){
     
     timespec interval;
     interval.tv_sec = 0;
     interval.tv_nsec = 3040000;
     
+    pthread_t thread2;
+    pthread_create(&thread2, NULL, &reciever_fcn, NULL);
+    
     for (int i = BEACON0; i <= BEACON3; ++i) {
         for (int j = 0; j <= 1 ; ++j) {
-            std::cout << "Sending " << j << " from beacon " << i << " using level " << transmit_map[i][j] << std::endl;
+            pthread_mutex_lock ( &cout_mutex );
+            std::cout << std::endl << "Sending " << j << " from beacon " << i << " using level " << transmit_map[i][j] << std::endl;
+            pthread_mutex_unlock ( &cout_mutex );
             send_message(i, j);
             clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
-            std::vector<std::vector<int> > message = recieve_message();
-            for (std::vector<std::vector<int> >::iterator it = message.begin(); it != message.end() ; ++it) {
-                std::cout << "Recieved " << (*it)[1] << " from beacon " << (*it)[0] << std::endl;
-            }
-            std::cout << std::endl;
+            
         }
     }
     
