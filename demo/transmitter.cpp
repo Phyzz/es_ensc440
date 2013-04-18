@@ -63,11 +63,25 @@ void * reciever_fcn(void *ptr) {
         clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
         std::vector<std::vector<int> > bit = recieve_message();
         if(bit.size() == 0) {
+            std::string bla;
+            char byte = 0;
+            int i = 0;
             for (std::vector<std::vector<int> >::iterator it = message.begin(); it != message.end(); ++ it) {
-                pthread_mutex_lock ( &cout_mutex );
+                if( ++i >= 8) {
+                    bla.append(&byte);
+                    byte = 0;
+                    i = 0;
+                }
+                byte << 1;
+                byte = (*it)[1];
+                
+                /*pthread_mutex_lock ( &cout_mutex );
                 std::cout << "Recieved " << (*it)[1] << " from beacon " << (*it)[0] << std::endl;
-                pthread_mutex_unlock ( &cout_mutex );    
+                pthread_mutex_unlock ( &cout_mutex );*/
             }
+            pthread_mutex_lock ( &cout_mutex );
+            std::cout << "Recieved " << bla << std::endl;
+            pthread_mutex_unlock ( &cout_mutex );
             message.clear();
         } else {
             for (std::vector<std::vector<int> >::iterator it = bit.begin(); it != bit.end() ; ++it) {
@@ -86,10 +100,15 @@ int main(int argc, char *argv[]){
     pthread_t thread2;
     pthread_create(&thread2, NULL, &reciever_fcn, NULL);
     
-    for (int i = BEACON0; i <= BEACON3; ++i) {
-        for (int j = 0; j <= 1 ; ++j) {
-            send_message(i, j);
-            clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);          
+    std::cin.tie(static_cast<std::ostream*>(0));
+    std::string input = "";
+    getline(std::cin, input);
+    for (std::string::iterator it = input.begin(); it != input.end(); ++it) {
+        char byte = *it;
+        for( int i = 0; i < 8; ++i ) {
+            send_message(0, byte & 0x80);
+            byte = byte << 1;
+            clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
         }
     }
     
