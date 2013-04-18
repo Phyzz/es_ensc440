@@ -20,10 +20,10 @@ es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 116, 123);
 es_DAC dac = es_DAC("/dev/spidev0.1");
 
 std::map<int, std::vector<int> > transmit_map = {
-    {BEACON0, {363, 380}},
-    {BEACON1, {396, 412}},
-    {BEACON2, {429, 445}},
-    {BEACON3, {461, 478}},
+    {BEACON0, {379, 396}},
+    {BEACON1, {414, 431}},
+    {BEACON2, {449, 467}},
+    {BEACON3, {485, 502}},
 };
 
 std::map<int, std::vector<int> > reciever_map = {
@@ -56,7 +56,7 @@ std::vector<std::vector<int> > recieve_message() {
 void * reciever_fcn(void *ptr) {
     timespec interval;
     interval.tv_sec = 0;
-    interval.tv_nsec = 7500000;
+    interval.tv_nsec = 7600000;
     
     std::vector<std::vector<int> > message;
     while(1){
@@ -68,6 +68,7 @@ void * reciever_fcn(void *ptr) {
                 std::cout << "Recieved " << (*it)[1] << " from beacon " << (*it)[0] << std::endl;
                 pthread_mutex_unlock ( &cout_mutex );    
             }
+            message.clear();
         } else {
             for (std::vector<std::vector<int> >::iterator it = bit.begin(); it != bit.end() ; ++it) {
                 message.push_back(*it);
@@ -80,7 +81,7 @@ int main(int argc, char *argv[]){
     
     timespec interval;
     interval.tv_sec = 0;
-    interval.tv_nsec = 7500000;
+    interval.tv_nsec = 2*7600000;
     
     pthread_t thread2;
     pthread_create(&thread2, NULL, &reciever_fcn, NULL);
@@ -93,7 +94,7 @@ int main(int argc, char *argv[]){
     }
     
     dac.setChannelLevel(CH_A, 0, false, false);
-    while(1);
+    sleep(1);
     
     return 0;
 }
