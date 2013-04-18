@@ -56,15 +56,22 @@ std::vector<std::vector<int> > recieve_message() {
 void * reciever_fcn(void *ptr) {
     timespec interval;
     interval.tv_sec = 0;
-    interval.tv_nsec = 3040000;
+    interval.tv_nsec = 7500000;
     
+    std::vector<std::vector<int> > message;
     while(1){
         clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
-        std::vector<std::vector<int> > message = recieve_message();
-        for (std::vector<std::vector<int> >::iterator it = message.begin(); it != message.end() ; ++it) {
-            pthread_mutex_lock ( &cout_mutex );
-            std::cout << "Recieved " << (*it)[1] << " from beacon " << (*it)[0] << std::endl;
-            pthread_mutex_unlock ( &cout_mutex );    
+        std::vector<std::vector<int> > bit = recieve_message();
+        if(bit.size() == 0) {
+            for (std::vector<std::vector<int> >::iterator it = message.begin(); it != message.end(); ++ it) {
+                pthread_mutex_lock ( &cout_mutex );
+                std::cout << "Recieved " << (*it)[1] << " from beacon " << (*it)[0] << std::endl;
+                pthread_mutex_unlock ( &cout_mutex );    
+            }
+        } else {
+            for (std::vector<std::vector<int> >::iterator it = bit.begin(); it != bit.end() ; ++it) {
+                message.push_back(*it);
+            }
         }
     }
 }
@@ -73,21 +80,20 @@ int main(int argc, char *argv[]){
     
     timespec interval;
     interval.tv_sec = 0;
-    interval.tv_nsec = 3040000;
+    interval.tv_nsec = 7500000;
     
     pthread_t thread2;
     pthread_create(&thread2, NULL, &reciever_fcn, NULL);
     
     for (int i = BEACON0; i <= BEACON3; ++i) {
         for (int j = 0; j <= 1 ; ++j) {
-            pthread_mutex_lock ( &cout_mutex );
-            std::cout << std::endl << "Sending " << j << " from beacon " << i << " using level " << transmit_map[i][j] << std::endl;
-            pthread_mutex_unlock ( &cout_mutex );
             send_message(i, j);
-            clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
-            
+            clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);          
         }
     }
+    
+    dac.setChannelLevel(CH_A, 0, false, false);
+    while(1);
     
     return 0;
 }
