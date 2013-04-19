@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
     sleep(1);
     for (int i = 0; i < 20; ++i) {
         int last_freq = 0 ;
-        for (int level = 330; level < 520; ++level) {
+        for (int level = 330; level < 550; ++level) {
             dac.setChannelLevel(CH_A, (int) level, false, false);
         
             clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
