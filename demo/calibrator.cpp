@@ -39,7 +39,7 @@ int main(int argc, char *argv[]){
                     raw_vals[last_freq].push_back({0,0});
                 }
                 frequencies.insert(highest_freq);
-                while s(raw_vals[highest_freq].size() <= i) {
+                while (raw_vals[highest_freq].size() <= i) {
                     raw_vals[highest_freq].push_back({0,0});
                 }
                 raw_vals[last_freq][i][1] = level-1;
