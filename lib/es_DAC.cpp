@@ -1,7 +1,7 @@
 #include "es_DAC.hpp"
 #include "es_EX.hpp"
 
-es_DAC::es_DAC(string device_path) : interface(device_path, 0, 1000000) {
+es_DAC::es_DAC(string device_path) : interface(device_path, 0, 5000000) {
 }
         
 void es_DAC::setChannelLevel(DACChannelEnum channel, unsigned int level, bool gain, bool shutdown) {
