@@ -70,15 +70,15 @@ void * reciever_fcn(void *ptr) {
         std::vector<std::vector<int> > bit = recieve_message();
         if(bit.size() == 0) {
             std::string bla;
-            char byte = 0;
+            char byte[2] = {'\0','\0'};
             int i = 0;
             for (std::vector<std::vector<int> >::iterator it = message.begin(); it != message.end(); ++ it) {
-                byte <<= 1;
-                byte = (*it)[1];
+                byte[0] <<= 1;
+                byte[0] |= (*it)[1];
                 
                 if( ++i >= 8) {
-                    bla.append(&byte);
-                    byte = 0;
+                    bla.append(byte);
+                    byte[0] = 0;
                     i = 0;
                 }
                 
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]){
             for( int i = 0; i < 8; ++i ) {
                 char bit_to_send = (byte & 0x80) >> 7;
                 send_message(0, bit_to_send);
-                byte >>= 1;
+                byte <<= 1;
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_send, NULL);
                 add_timespec(&next_send, 2*7800000);
             }
@@ -123,7 +123,6 @@ int main(int argc, char *argv[]){
         
         dac.setChannelLevel(CH_A, 0, false, false);
     }
-    sleep(1);
     
     return 0;
 }
