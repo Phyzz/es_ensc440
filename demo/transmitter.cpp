@@ -163,7 +163,7 @@ int main(int argc, char *argv[]){
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_send, NULL);
             }
         }
-
+        dac.setChannelLevel(CH_A, 0, false, false);
     }
 
     return 0;
