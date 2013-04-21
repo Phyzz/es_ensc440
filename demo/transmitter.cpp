@@ -1,6 +1,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <set>
 #include <math.h>
 #include <time.h>
 #include <assert.h>
@@ -15,8 +16,8 @@ es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 119, 125);
 es_DAC dac = es_DAC("/dev/spidev0.1");
 
 std::map<int, int> transmit_map = {
-    {0, 448},
-    {1, 520},
+    {0, 0},
+    {1, 0},
 };
 
 std::map<int, int > reciever_map = {
@@ -138,8 +139,69 @@ void * reciever_fcn(void *ptr) {
     }
 }
 
+void do_calibration() {
+    timespec interval;
+    interval.tv_sec = 0;
+    interval.tv_nsec = 6000000;
+    
+    std::set<int> frequencies;
+    std::map<int, std::vector<std::vector<int> > > raw_vals;
+    
+    std::map<int, int> set_vals;
+    
+    for (int i = 0; i < 20; ++i) {
+        int last_freq = 0 ;
+        for (int level = 330; level < 560; ++level) {
+            dac.setChannelLevel(CH_A, (int) level, false, false);
+        
+            clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
+        
+            sampler.takeSample();
+            int highest_freq = sampler.getStrongestFreq();
+            if(highest_freq > last_freq) {
+                frequencies.insert(last_freq);
+                while (raw_vals[last_freq].size() <= i) {
+                    raw_vals[last_freq].push_back({0,0});
+                }
+                frequencies.insert(highest_freq);
+                while (raw_vals[highest_freq].size() <= i) {
+                    raw_vals[highest_freq].push_back({0,0});
+                }
+                raw_vals[last_freq][i][1] = level-1;
+                raw_vals[highest_freq][i][0] = level;
+            }
+            last_freq = highest_freq;
+        }
+    }
+    
+    for(std::set<int>::iterator it = frequencies.lower_bound(38000); it != frequencies.lower_bound(41200); ++it) {
+        int frequency = *it;
+        float lower_bound = 0;
+        float upper_bound = 0;
+        for(std::vector<std::vector<int> >::iterator in_it = raw_vals[frequency].begin(); in_it != raw_vals[frequency].end(); ++in_it) {
+            lower_bound += (*in_it)[0];
+            upper_bound += (*in_it)[1];
+        }
+        lower_bound = lower_bound / raw_vals[frequency].size();
+        upper_bound = upper_bound / raw_vals[frequency].size();
+        float set = (lower_bound + upper_bound) / 2;
+        set_vals[frequency] = (int) (set + 0.5);
+   }
+   transmit_map[0] = set_vals[39474];
+   transmit_map[1] = set_vals[40789];
+}
+
 int main(int argc, char *argv[]){
     timespec next_send;
+    
+    std::cout << "Calibrating the transmitter..." << std::endl;
+    do_calibration();
+    if(transmit_map[0] == 0 || transmit_map[1] == 0) {
+        std::cout << "Calibration failed" << std::endl;
+        return 1;
+    }
+    std::cout << "Calibration complete" << std::endl;
+    std::cout << "Type something to transmit" << std::endl;
 
     std::cin.tie(static_cast<std::ostream*>(0));
     pthread_t thread2;
