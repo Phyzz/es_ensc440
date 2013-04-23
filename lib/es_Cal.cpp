@@ -6,12 +6,16 @@ es_Calibrator::es_Calibrator(es_DAC* dac, es_FFTSampler* sampler, pthread_mutex_
     if(NULL == dac_mutex) {
         this->dac_mutex = new pthread_mutex_t;
         pthread_mutex_init(this->dac_mutex, NULL);
-        created_dac_mutex = true;
+        this->created_dac_mutex = true;
+    } else {
+        this->created_dac_mutex = false;
     }
     if(NULL == sampler_mutex) {
         this->sampler_mutex = new pthread_mutex_t;
         pthread_mutex_init(this->sampler_mutex, NULL);
-        created_sampler_mutex = true;
+        this->created_sampler_mutex = true;
+    } else {
+        this->created_sampler_mutex = false;
     }
 }
         
@@ -67,17 +71,48 @@ std::map<int, int> es_Calibrator::doCalibration() {
         lower_bound = lower_bound / raw_vals[frequency].size();
         upper_bound = upper_bound / raw_vals[frequency].size();
         float set = (lower_bound + upper_bound) / 2;
-        set_vals[frequency] = (int) (set + 0.5);
+        this->set_val_cache[frequency] = (int) (set + 0.5);
    }
-   return set_vals;
+   return this->set_val_cache;
+}
+
+void es_Calibrator::loadCachedSetVals() {
+    std::ifstream cache_file;
+    cache_file.open("~/vco_cal_cache.txt");
+    std::string line;
+    while( cache_file.good() ) {
+        getline(cache_file, line);
+        int freq    = 0;
+        int set_val = 0;
+        std::string freq_string    = line.substr(0, line.find(" : "));
+        std::string set_val_string = line.substr(line.find(" : " + 3));
+        std::stringstream convert(freq_string);
+        convert >> freq;
+        convert << set_val_string;
+        convert >> set_val;
+        this->set_val_cache[freq] = set_val;
+    }
+    cache_file.close();
+}
+
+void es_Calibrator::saveCachedSetVals() {
+    std::ofstream cache_file;
+    cache_file.open("~/vco_cal_cache.txt");
+    for (std::map<int, int>::iterator it = this->set_val_cache.begin(); it != this->set_val_cache.end(); ++it) {
+        cache_file << it->first << " : " << it->second << std::endl;
+    }
+    cache_file.close();
+}
+
+bool es_Calibrator::testCachedSetVals() {
 }
 
 es_Calibrator::~es_Calibrator() {
-    if(created_dac_mutex) {
+    if(this->created_dac_mutex) {
         pthread_mutex_destroy(this->dac_mutex);
         delete this->dac_mutex;
     }
-    if(created_sampler_mutex) {
+    if(this->created_sampler_mutex) {
         pthread_mutex_destroy(this->sampler_mutex);
         delete this->sampler_mutex;
     }
