@@ -4,10 +4,12 @@ es_Calibrator::es_Calibrator(es_DAC* dac, es_FFTSampler* sampler, pthread_mutex_
     this->dac = dac;
     this->sampler = sampler;
     if(NULL == dac_mutex) {
+        this->dac_mutex = new pthread_mutex_t;
         pthread_mutex_init(this->dac_mutex, NULL);
         created_dac_mutex = true;
     }
     if(NULL == sampler_mutex) {
+        this->sampler_mutex = new pthread_mutex_t;
         pthread_mutex_init(this->sampler_mutex, NULL);
         created_sampler_mutex = true;
     }
@@ -73,9 +75,11 @@ std::map<int, int> es_Calibrator::doCalibration() {
 es_Calibrator::~es_Calibrator() {
     if(created_dac_mutex) {
         pthread_mutex_destroy(this->dac_mutex);
+        delete this->dac_mutex;
     }
     if(created_sampler_mutex) {
         pthread_mutex_destroy(this->sampler_mutex);
+        delete this->sampler_mutex;
     }
 }
 	
