@@ -26,7 +26,7 @@ std::map<int, int> es_Calibrator::doCalibration() {
     sleep(1);
     for (int i = 0; i < 20; ++i) {
         int last_freq = 0 ;
-        for (int level = 330; level < 560; ++level) {
+        for (int level = 330; level < 600; ++level) {
             pthread_mutex_lock ( this->dac_mutex );
             this->dac->setChannelLevel(CH_A, (int) level, false, false);
             pthread_mutex_unlock( this->dac_mutex );
