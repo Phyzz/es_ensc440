@@ -5,7 +5,8 @@
 #include "es_DAC.hpp"
 #include "es_FFTSampler.hpp"
 
-#include <string>
+#include <fstream>
+#include <sstream>
 #include <time.h>
 #include <map>
 #include <vector>
@@ -17,6 +18,9 @@ class es_Calibrator {
         es_Calibrator(es_DAC* dac, es_FFTSampler* sampler, pthread_mutex_t* dac_mutex = NULL, pthread_mutex_t* sampler_mutex = NULL );
         
         std::map<int, int> doCalibration();
+        void loadCachedSetVals();
+        void saveCachedSetVals();
+        bool testCachedSetVals();
         
         ~es_Calibrator();
         
@@ -24,9 +28,10 @@ class es_Calibrator {
         es_DAC* dac;
         es_FFTSampler* sampler;
         pthread_mutex_t* dac_mutex;
-        bool created_dac_mutex = false;
+        bool created_dac_mutex;
         pthread_mutex_t* sampler_mutex;
-        bool created_sampler_mutex = false;
+        bool created_sampler_mutex;
+        std::map<int, int> set_val_cache;
 };
 
 #endif
