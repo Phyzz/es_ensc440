@@ -77,27 +77,31 @@ std::map<int, int> es_Calibrator::doCalibration() {
 }
 
 void es_Calibrator::loadCachedSetVals() {
-    std::ifstream cache_file;
-    cache_file.open("~/vco_cal_cache.txt");
+    std::ifstream cache_file ("~/vco_cal_cache.txt");
     std::string line;
     while( cache_file.good() ) {
         getline(cache_file, line);
         int freq    = 0;
         int set_val = 0;
-        std::string freq_string    = line.substr(0, line.find(" : "));
-        std::string set_val_string = line.substr(line.find(" : " + 3));
+        std::string freq_string;
+        std::string set_val_string;
+        try {
+            freq_string    = line.substr(0, line.find(" : "));
+            set_val_string = line.substr(line.find(" : "));
+        } catch(std::out_of_range&) {
+            continue;
+        }
         std::stringstream convert(freq_string);
         convert >> freq;
-        convert << set_val_string;
-        convert >> set_val;
+        std::stringstream convert2(set_val_string);
+        convert2 >> set_val;
         this->set_val_cache[freq] = set_val;
     }
     cache_file.close();
 }
 
 void es_Calibrator::saveCachedSetVals() {
-    std::ofstream cache_file;
-    cache_file.open("~/vco_cal_cache.txt");
+    std::ofstream cache_file ("~/vco_cal_cache.txt");
     for (std::map<int, int>::iterator it = this->set_val_cache.begin(); it != this->set_val_cache.end(); ++it) {
         cache_file << it->first << " : " << it->second << std::endl;
     }

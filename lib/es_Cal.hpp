@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <time.h>
 #include <map>
 #include <vector>
