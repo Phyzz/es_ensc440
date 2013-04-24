@@ -122,6 +122,11 @@ bool es_Calibrator::testCachedSetVals() {
     interval.tv_sec = 0;
     interval.tv_nsec = 50000000;
     
+    if(this->set_val_cache.size() == 0) {
+        return false;
+    }
+
+    
     for (std::map<int, int>::iterator it = this->set_val_cache.begin(); it != this->set_val_cache.end(); ++it) {
         for (int i = -1; i <= 1; ++i) {
             pthread_mutex_lock ( this->dac_mutex );
