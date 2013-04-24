@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <time.h>
 #include <map>
 #include <vector>
@@ -18,9 +19,11 @@ class es_Calibrator {
         es_Calibrator(es_DAC* dac, es_FFTSampler* sampler, pthread_mutex_t* dac_mutex = NULL, pthread_mutex_t* sampler_mutex = NULL );
         
         std::map<int, int> doCalibration();
+        std::map<int, int> getCachedSetVals();
         void loadCachedSetVals();
         void saveCachedSetVals();
         bool testCachedSetVals();
+        
         
         ~es_Calibrator();
         

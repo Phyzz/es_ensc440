@@ -36,7 +36,7 @@ std::map<int, int> es_Calibrator::doCalibration() {
         int last_freq = 0 ;
         for (int level = 330; level < 600; ++level) {
             pthread_mutex_lock ( this->dac_mutex );
-            this->dac->setChannelLevel(CH_A, (int) level, false, false);
+            this->dac->setChannelLevel(CH_A, level, false, false);
             pthread_mutex_unlock( this->dac_mutex );
             
             clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
@@ -78,8 +78,11 @@ std::map<int, int> es_Calibrator::doCalibration() {
    return this->set_val_cache;
 }
 
+std::map<int, int> es_Calibrator::getCachedSetVals() {
+    return this->set_val_cache;
+}
+
 void es_Calibrator::loadCachedSetVals() {
-    std::ifstream cache_file ("/root/vco_cal_cache.txt");
     std::string line;
     while( cache_file.good() ) {
         getline(cache_file, line);
@@ -88,8 +91,6 @@ void es_Calibrator::loadCachedSetVals() {
         std::string freq_string;
         std::string set_val_string;
         try {
-        freq_string    = line.substr(0, line.find(" : "));
-        set_val_string = line.substr(line.find(" : ") + 3);
         } catch(std::out_of_range&) {
             continue;
         }
@@ -103,7 +104,7 @@ void es_Calibrator::loadCachedSetVals() {
 }
 
 void es_Calibrator::saveCachedSetVals() {
-    std::ofstream cache_file ("/root/vco_cal_cache.txt");
+    std::ofstream cache_file ("~/vco_cal_cache.txt");
     for (std::map<int, int>::iterator it = this->set_val_cache.begin(); it != this->set_val_cache.end(); ++it) {
         cache_file << it->first << " : " << it->second << std::endl;
     }
@@ -111,6 +112,29 @@ void es_Calibrator::saveCachedSetVals() {
 }
 
 bool es_Calibrator::testCachedSetVals() {
+    timespec interval;
+    interval.tv_sec = 0;
+    interval.tv_nsec = 6000000;
+    
+    for (std::map<int, int>::iterator it = this->set_val_cache.begin(); it != this->set_val_cache.end(); ++it) {
+        for (int i = -1; i <= 1; ++i) {
+            pthread_mutex_lock ( this->dac_mutex );
+            this->dac->setChannelLevel(CH_A, it->second + i, false, false);
+            pthread_mutex_unlock( this->dac_mutex );
+            
+            clock_nanosleep(CLOCK_MONOTONIC, 0, &interval, NULL);
+        
+            pthread_mutex_lock( this->sampler_mutex );
+            this->sampler->takeSample();
+            int highest_freq = this->sampler->getStrongestFreq();
+            pthread_mutex_unlock( this->sampler_mutex );
+            
+            if (highest_freq != it->first) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 es_Calibrator::~es_Calibrator() {
