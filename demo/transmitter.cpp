@@ -141,17 +141,31 @@ void * reciever_fcn(void *ptr) {
 }
 
 void do_calibration(es_Calibrator &calibrator) {
-    std::map<int,int> set_vals = calibrator.doCalibration();
+    calibrator.loadCachedSetVals();
+    std::map<int,int> set_vals;
+    if(calibrator.testCachedSetVals()) {
+        calibrator.getCachedSetVals();
+    } else {
+        std::cout << "Recalibrating the transmitter..." << std::endl;
+        for (int i = 0; i < 5; ++i) {
+        set_vals = calibrator.doCalibration();
+        if (calibrator.testCachedSetVals()) {
+            break;
+        }
+    }
+    calibrator.saveCachedSetVals();
+    }
+
     transmit_map[0] = set_vals[39474];
     transmit_map[1] = set_vals[40789];
 }
 
 int main(int argc, char *argv[]){
-    timespec next_send;
-    
-    std::cout << "Calibrating the transmitter..." << std::endl;
+    timespec next_send;   
+
     es_Calibrator calibrator = es_Calibrator(&dac, &sampler);
     do_calibration(calibrator);
+    dac.setChannelLevel(CH_A, 0, false, false);
     
     if(transmit_map[0] == 0 || transmit_map[1] == 0) {
         std::cout << "Calibration failed" << std::endl;
