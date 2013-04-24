@@ -140,38 +140,47 @@ void * reciever_fcn(void *ptr) {
     }
 }
 
-void do_calibration(es_Calibrator &calibrator) {
+void do_calibration() {
+    es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 114, 127);
+    es_Calibrator calibrator = es_Calibrator(&dac, &sampler);
+
     calibrator.loadCachedSetVals();
     std::map<int,int> set_vals;
     if(calibrator.testCachedSetVals()) {
-        calibrator.getCachedSetVals();
+        set_vals = calibrator.getCachedSetVals();
     } else {
+        pthread_mutex_lock ( &cout_mutex );
         std::cout << "Recalibrating the transmitter..." << std::endl;
+        pthread_mutex_unlock ( &cout_mutex );
         for (int i = 0; i < 5; ++i) {
-        set_vals = calibrator.doCalibration();
-        if (calibrator.testCachedSetVals()) {
-            break;
+            set_vals = calibrator.doCalibration();
+            if (calibrator.testCachedSetVals()) {
+                break;
+            }
         }
-    }
-    calibrator.saveCachedSetVals();
+        if (!calibrator.testCachedSetVals()) {
+            return;
+        }
+        calibrator.saveCachedSetVals();
     }
 
     transmit_map[0] = set_vals[39474];
     transmit_map[1] = set_vals[40789];
+    pthread_mutex_lock ( &cout_mutex );
+    std::cout << "Calibration complete" << std::endl;
+    pthread_mutex_unlock ( &cout_mutex );
 }
 
 int main(int argc, char *argv[]){
     timespec next_send;   
 
-    es_Calibrator calibrator = es_Calibrator(&dac, &sampler);
-    do_calibration(calibrator);
+    do_calibration();
     dac.setChannelLevel(CH_A, 0, false, false);
     
     if(transmit_map[0] == 0 || transmit_map[1] == 0) {
         std::cout << "Calibration failed" << std::endl;
         return 1;
     }
-    std::cout << "Calibration complete" << std::endl;
     std::cout << "Type something to transmit" << std::endl;
 
     std::cin.tie(static_cast<std::ostream*>(0));

@@ -61,7 +61,7 @@ std::map<int, int> es_Calibrator::doCalibration() {
         }
     }
     
-    for(std::set<int>::iterator it = frequencies.lower_bound(38000); it != frequencies.lower_bound(40800); ++it) {
+    for(std::set<int>::iterator it = frequencies.lower_bound(39100); it != frequencies.lower_bound(40800); ++it) {
         int frequency = *it;
         float lower_bound = 0;
         float upper_bound = 0;
