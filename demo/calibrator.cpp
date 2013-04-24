@@ -13,12 +13,16 @@ int main(int argc, char *argv[]){
     es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 114, 127);
     
     es_DAC dac = es_DAC("/dev/spidev0.1");
-    
     es_Calibrator calibrator = es_Calibrator(&dac, &sampler);
-    std::map<int,int> set_vals = calibrator.doCalibration();
-std::cout << "saving" << std::endl;
-    calibrator.saveCachedSetVals();
+    
     calibrator.loadCachedSetVals();
+    if(calibrator.testCachedSetVals()) {
+        std::cout << "Cached values valid" << std::endl;
+    } else {
+        std::cout << "Cached values invalid" << std::endl;
+    }
+    std::map<int,int> set_vals = calibrator.doCalibration();
+    calibrator.saveCachedSetVals();
     
     for(std::map<int, int>::iterator it = set_vals.begin(); it != set_vals.end(); ++it) {
         std::cout << "Frequency " << it->first << " has setpoint " << it->second << std::endl;

@@ -25,6 +25,7 @@ std::map<int, int> es_Calibrator::doCalibration() {
     timespec interval;
     interval.tv_sec = 0;
     interval.tv_nsec = 6000000;
+    this->set_val_cache.clear();
     
     std::set<int> frequencies;
     std::map<int, std::vector<std::vector<int> > > raw_vals;
@@ -62,7 +63,7 @@ std::map<int, int> es_Calibrator::doCalibration() {
         }
     }
     
-    for(std::set<int>::iterator it = frequencies.lower_bound(38000); it != frequencies.lower_bound(41200); ++it) {
+    for(std::set<int>::iterator it = frequencies.lower_bound(38000); it != frequencies.lower_bound(40800); ++it) {
         int frequency = *it;
         float lower_bound = 0;
         float upper_bound = 0;
@@ -83,7 +84,9 @@ std::map<int, int> es_Calibrator::getCachedSetVals() {
 }
 
 void es_Calibrator::loadCachedSetVals() {
+    std::ifstream cache_file ("/root/vco_cal_cache.txt");
     std::string line;
+
     while( cache_file.good() ) {
         getline(cache_file, line);
         int freq    = 0;
@@ -91,6 +94,8 @@ void es_Calibrator::loadCachedSetVals() {
         std::string freq_string;
         std::string set_val_string;
         try {
+            freq_string    = line.substr(0, line.find(" : "));
+            set_val_string = line.substr(line.find(" : ") + 3);
         } catch(std::out_of_range&) {
             continue;
         }
@@ -98,13 +103,15 @@ void es_Calibrator::loadCachedSetVals() {
         convert >> freq;
         std::stringstream convert2(set_val_string);
         convert2 >> set_val;
-        this->set_val_cache[freq] = set_val;
+        if(freq != 0 && set_val != 0 ) {
+            this->set_val_cache[freq] = set_val;
+        }
     }
     cache_file.close();
 }
 
 void es_Calibrator::saveCachedSetVals() {
-    std::ofstream cache_file ("~/vco_cal_cache.txt");
+    std::ofstream cache_file ("/root/vco_cal_cache.txt");
     for (std::map<int, int>::iterator it = this->set_val_cache.begin(); it != this->set_val_cache.end(); ++it) {
         cache_file << it->first << " : " << it->second << std::endl;
     }
@@ -114,10 +121,15 @@ void es_Calibrator::saveCachedSetVals() {
 bool es_Calibrator::testCachedSetVals() {
     timespec interval;
     interval.tv_sec = 0;
-    interval.tv_nsec = 6000000;
+    interval.tv_nsec = 50000000;
+
+    if(this->set_val_cache.size() == 0) {
+        return false;
+    }
     
     for (std::map<int, int>::iterator it = this->set_val_cache.begin(); it != this->set_val_cache.end(); ++it) {
         for (int i = -1; i <= 1; ++i) {
+std::cout << it->first << " " << it->second << " " << i << std::endl;
             pthread_mutex_lock ( this->dac_mutex );
             this->dac->setChannelLevel(CH_A, it->second + i, false, false);
             pthread_mutex_unlock( this->dac_mutex );
@@ -128,6 +140,7 @@ bool es_Calibrator::testCachedSetVals() {
             this->sampler->takeSample();
             int highest_freq = this->sampler->getStrongestFreq();
             pthread_mutex_unlock( this->sampler_mutex );
+std::cout << highest_freq << std::endl;
             
             if (highest_freq != it->first) {
                 return false;
