@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <iostream>
 
 int main(int argc, char *argv[]){
     
@@ -15,6 +16,9 @@ int main(int argc, char *argv[]){
     
     es_Calibrator calibrator = es_Calibrator(&dac, &sampler);
     std::map<int,int> set_vals = calibrator.doCalibration();
+std::cout << "saving" << std::endl;
+    calibrator.saveCachedSetVals();
+    calibrator.loadCachedSetVals();
     
     for(std::map<int, int>::iterator it = set_vals.begin(); it != set_vals.end(); ++it) {
         std::cout << "Frequency " << it->first << " has setpoint " << it->second << std::endl;
