@@ -162,13 +162,12 @@ void do_calibration() {
             return;
         }
         calibrator.saveCachedSetVals();
+        pthread_mutex_lock ( &cout_mutex );
+        std::cout << "Calibration complete" << std::endl;
+        pthread_mutex_unlock ( &cout_mutex );
     }
-
     transmit_map[0] = set_vals[39474];
     transmit_map[1] = set_vals[40789];
-    pthread_mutex_lock ( &cout_mutex );
-    std::cout << "Calibration complete" << std::endl;
-    pthread_mutex_unlock ( &cout_mutex );
 }
 
 int main(int argc, char *argv[]){
