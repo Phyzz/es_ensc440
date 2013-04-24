@@ -10,6 +10,7 @@
 #include "../lib/es_DAC.hpp"
 #include "../lib/es_FFTSampler.hpp"
 #include "../lib/es_Cal.hpp"
+#include "../lib/es_Rec.hpp"
 
 pthread_mutex_t cout_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -19,16 +20,6 @@ es_DAC dac = es_DAC("/dev/spidev0.1");
 std::map<int, int> transmit_map = {
     {0, 0},
     {1, 0},
-};
-
-std::map<int, int > reciever_map = {
-    {39145, 0},
-    {39474, 0},
-    {39803, 0},
-    {40132, 2},
-    {40461, 1},
-    {40789, 1},
-    {41118, 1},
 };
 
 void add_to_time_spec(timespec* tp, long nanos) {
@@ -83,61 +74,9 @@ void send_message(unsigned short bit) {
     dac.setChannelLevel(CH_A, transmit_map[bit], false, false);
 }
 
-std::vector<int> recieve_message() {
-    sampler.takeSample();
-    std::vector<int> ret;
-    std::vector<FreqPower> freqs = sampler.getFreqsAboveThresh();
-    if (freqs.size() != 0) {
-        ret.push_back(reciever_map[sampler.getStrongestFreq()]);
-    }
-    return ret;
-}
-
-void * reciever_fcn(void *ptr) {
-    timespec next_sample;
-    clock_gettime(CLOCK_MONOTONIC,&next_sample);
-
-    std::vector<int> message;
-    while(1){
-        add_to_time_spec(&next_sample, 14000000);
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_sample, NULL);
-        std::vector<int> bit = recieve_message();
-        if(bit.size() == 0) {
-            std::string bla;
-            char byte[2] = {'\0','\0'};
-            int i = 0;
-            for (std::vector<int>::iterator it = message.begin(); it != message.end(); ++ it) {
-              if (*it == 2) {
-                    pthread_mutex_lock ( &cout_mutex );
-                    std::cout << "Recieved bad bit." << std::endl;
-                    pthread_mutex_unlock ( &cout_mutex );
-                    bla.clear();
-                    break;
-                } else {
-                    byte[0] <<= 1;
-                    byte[0] |= (*it);
-
-                    
-                    if( ++i >= 8) {
-                        bla.append(byte);
-                        byte[0] = 0;
-                        i = 0;
-                    }
-                }
-                
-            }
-            if(bla.size() != 0) {
-                pthread_mutex_lock ( &cout_mutex );
-                std::cout << "Recieved " << bla << std::endl;
-                pthread_mutex_unlock ( &cout_mutex );
-            }
-            message.clear();
-        } else {
-            for (std::vector<int>::iterator it = bit.begin(); it != bit.end() ; ++it) {
-                message.push_back(*it);
-            }
-        }
-    }
+void * receiver_fcn(void *ptr) {
+    es_Rec receiver = es_Rec(&sampler, &cout_mutex);
+    receiver.enterReceiveLoop();
 }
 
 void do_calibration() {
@@ -184,7 +123,7 @@ int main(int argc, char *argv[]){
 
     std::cin.tie(static_cast<std::ostream*>(0));
     pthread_t thread2;
-    pthread_create(&thread2, NULL, &reciever_fcn, NULL);
+    pthread_create(&thread2, NULL, &receiver_fcn, NULL);
 
     while(1) {
         std::string input = "";
