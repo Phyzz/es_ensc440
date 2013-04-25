@@ -8,6 +8,7 @@ es_Calibrator::es_Calibrator(es_DAC* dac, es_FFTSampler* sampler, pthread_mutex_
         pthread_mutex_init(this->dac_mutex, NULL);
         this->created_dac_mutex = true;
     } else {
+        this->dac_mutex = dac_mutex;
         this->created_dac_mutex = false;
     }
     if(NULL == sampler_mutex) {
@@ -15,6 +16,7 @@ es_Calibrator::es_Calibrator(es_DAC* dac, es_FFTSampler* sampler, pthread_mutex_
         pthread_mutex_init(this->sampler_mutex, NULL);
         this->created_sampler_mutex = true;
     } else {
+        this->sampler_mutex = sampler_mutex;
         this->created_sampler_mutex = false;
     }
 }

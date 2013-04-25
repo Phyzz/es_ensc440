@@ -19,6 +19,7 @@ es_Rec::es_Rec(es_FFTSampler* sampler, pthread_mutex_t* cout_mutex) {
             pthread_mutex_init(this->cout_mutex, NULL);
             this->created_cout_mutex = true;
         } else {
+            this->cout_mutex = cout_mutex;
             this->created_cout_mutex = false;
         }
 }
