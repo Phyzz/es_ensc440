@@ -1,7 +1,7 @@
 #include "es_Rec.hpp"
 #include "es_EX.hpp"
 
-es_Rec::es_Rec(es_FFTSampler* sampler, pthread_mutex_t* cout_mutex) {
+es_Rec::es_Rec(es_FFTSampler* sampler, pthread_mutex_t* cout_mutex, int mode) {
      this->receiver_map = {
             {39145, 0},
             {39474, 0},
@@ -11,6 +11,7 @@ es_Rec::es_Rec(es_FFTSampler* sampler, pthread_mutex_t* cout_mutex) {
             {40789, 1},
             {41118, 1},
         };
+        this->mode = mode;
         
         this->sampler = sampler;
         
@@ -30,18 +31,51 @@ void es_Rec::enterReceiveLoop() {
 
     std::vector<int> byte_buf;
     std::string message;
+    std::vector<char> time_msg;
     while(1){
         this->add_to_time_spec(&next_sample, 14000000);
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_sample, NULL);
         std::vector<int> bit = this->receive_bit();
         if(bit.size() == 0) {
-            if(byte_buf.size() == 0 && message.size() != 0) {
+            if(this->mode == 0 && byte_buf.size() == 0 && time_msg.size() != 0) {
+                if(time_msg.size() != 8) {
+                    time_msg.clear();
+                    continue;
+                }
                 pthread_mutex_lock ( this->cout_mutex );
                 std::cout << "Recieved: " << message << std::endl;
                 pthread_mutex_unlock ( this->cout_mutex );
                 message.clear();
+            } else if(this->mode == 1 && byte_buf.size() == 0 && time_msg.size() != 0) {
+                int seq = 0;
+                timespec rec_time;
+                rec_time.tv_sec = 0;
+                rec_time.tv_nsec = 0;
+                
+                seq |= time_msg[0];
+                seq <<= 8;
+                seq |= message[1];
+                rec_time.tv_sec |= message[2];
+                rec_time.tv_sec <<= 8;
+                rec_time.tv_sec |= message[3];
+                rec_time.tv_sec <<= 8;
+                rec_time.tv_sec |= message[4];
+                rec_time.tv_sec <<= 8;
+                rec_time.tv_sec |= message[5];
+                rec_time.tv_nsec |= message[6];
+                rec_time.tv_nsec <<= 8;
+                rec_time.tv_nsec |= message[7];
+                
+                struct tm * timeinfo;
+                timeinfo = localtime(&(rec_time.tv_sec));
+                
+                pthread_mutex_lock ( this->cout_mutex );
+                std::cout << "Received: " << seq << ": " << asctime(timeinfo) << rec_time.tv_nsec << "ns" << std::endl;
+                pthread_mutex_unlock ( this->cout_mutex );
+                
             } else if(byte_buf.size() != 0 && byte_buf.size() != 8) {
                 if (message.size() != 0) {
+                    time_msg.clear();
                     message.append("?");
                 }
             } else if(byte_buf.size() != 0) {
@@ -49,6 +83,7 @@ void es_Rec::enterReceiveLoop() {
                 for (std::vector<int>::iterator it = byte_buf.begin(); it != byte_buf.end(); ++ it) {
                   if (*it == 2) {
                         if (message.size() != 0) {
+                            time_msg.clear();
                             message.append("?");
                         }
                         break;
@@ -57,7 +92,11 @@ void es_Rec::enterReceiveLoop() {
                         byte[0] |= (*it);
                     }
                 }
-                message.append(byte);
+                if (this->mode == 0) {
+                    message.append(byte);
+                } else if (this->mode == 1) {
+                    time_msg.push_back(*byte);
+                }
                 byte[0] = 0;
             }
             byte_buf.clear();

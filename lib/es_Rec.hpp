@@ -14,7 +14,7 @@ using std::string;
 class es_Rec {
 
     public:
-        es_Rec(es_FFTSampler* sampler, pthread_mutex_t* cout_mutex = NULL);
+        es_Rec(es_FFTSampler* sampler, pthread_mutex_t* cout_mutex = NULL, int mode = 0);
         
         void enterReceiveLoop();
         
@@ -28,6 +28,7 @@ class es_Rec {
         std::map<int, int > receiver_map;
         pthread_mutex_t* cout_mutex;
         bool created_cout_mutex;
+        int mode;
 };
 
 #endif
