@@ -52,9 +52,9 @@ void es_Rec::enterReceiveLoop() {
                         byte[0] <<= 1;
                         byte[0] |= (*it);
                     }
-                    message.append(byte);
-                    byte[0] = 0;
                 }
+                message.append(byte);
+                byte[0] = 0;
             }
             byte_buf.clear();
         } else {
