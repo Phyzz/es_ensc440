@@ -119,13 +119,16 @@ int main(int argc, char *argv[]){
         std::cout << "Calibration failed" << std::endl;
         return 1;
     }
-    std::cout << "Type something to transmit" << std::endl;
 
     std::cin.tie(static_cast<std::ostream*>(0));
     pthread_t thread2;
     pthread_create(&thread2, NULL, &receiver_fcn, NULL);
 
     while(1) {
+        pthread_mutex_lock ( &cout_mutex );
+        std::cout << "Type something to transmit:" << std::endl;
+        pthread_mutex_unlock ( &cout_mutex );
+        
         std::string input = "";
         getline(std::cin, input);
         clock_gettime(CLOCK_MONOTONIC,&next_send);
@@ -138,8 +141,10 @@ int main(int argc, char *argv[]){
                 byte <<= 1;
                 clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_send, NULL);
             }
+            add_to_time_spec(&next_send,14000000);
+            dac.setChannelLevel(CH_A, 0, false, false);
+            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_send, NULL);
         }
-        dac.setChannelLevel(CH_A, 0, false, false);
     }
 
     return 0;

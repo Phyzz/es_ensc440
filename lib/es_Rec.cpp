@@ -29,37 +29,32 @@ void es_Rec::enterReceiveLoop() {
     clock_gettime(CLOCK_MONOTONIC,&next_sample);
 
     std::vector<int> byte_buf;
+    std::string message;
     while(1){
         this->add_to_time_spec(&next_sample, 14000000);
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_sample, NULL);
         std::vector<int> bit = this->receive_bit();
         if(bit.size() == 0) {
-            std::string message;
-            char byte[2] = {'\0','\0'};
-            int num_received_bits = 0;
-            for (std::vector<int>::iterator it = byte_buf.begin(); it != byte_buf.end(); ++ it) {
-              if (*it == 2) {
-                    pthread_mutex_lock ( this->cout_mutex );
-                    std::cout << "Recieved bad bit." << std::endl;
-                    pthread_mutex_unlock ( this->cout_mutex );
-                    message.clear();
-                    break;
-                } else {
-                    byte[0] <<= 1;
-                    byte[0] |= (*it);
-
-
-                    if( ++num_received_bits >= 8) {
-                        message.append(byte);
-                        byte[0] = 0;
-                        num_received_bits = 0;
-                    }
-                }
-            }
-            if(message.size() != 0) {
+            if(byte_buf.size() == 0 && message.size() != 0) {
                 pthread_mutex_lock ( this->cout_mutex );
-                std::cout << "Recieved " << message << std::endl;
+                std::cout << "Recieved: " << message << std::endl;
                 pthread_mutex_unlock ( this->cout_mutex );
+                message.clear();
+            } else if(byte_buf.size() != 0 && byte_buf.size() != 8) {
+                message.append("?");
+            } else if(byte_buf.size() != 0) {
+                char byte[2] = {'\0','\0'};
+                for (std::vector<int>::iterator it = byte_buf.begin(); it != byte_buf.end(); ++ it) {
+                  if (*it == 2) {
+                        message.append("?");
+                        break;
+                    } else {
+                        byte[0] <<= 1;
+                        byte[0] |= (*it);
+                    }
+                    message.append(byte);
+                    byte[0] = 0;
+                }
             }
             byte_buf.clear();
         } else {
