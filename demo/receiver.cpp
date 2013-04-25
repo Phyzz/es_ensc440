@@ -10,7 +10,7 @@
 #include "../lib/es_Rec.hpp"
 
 int main(int argc, char *argv[]){
-    es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 119, 125);
+    es_FFTSampler sampler = es_FFTSampler("/dev/spidev0.0", 119, 125, 5);
     es_Rec receiver = es_Rec(&sampler);
     receiver.enterReceiveLoop();
 
