@@ -125,6 +125,7 @@ int main(int argc, char *argv[]){
     pthread_create(&thread2, NULL, &receiver_fcn, NULL);
 
     while(1) {
+        sleep(1);
         pthread_mutex_lock ( &cout_mutex );
         std::cout << "Type something to transmit:" << std::endl;
         pthread_mutex_unlock ( &cout_mutex );
