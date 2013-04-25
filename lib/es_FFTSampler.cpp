@@ -1,7 +1,8 @@
 #include "es_FFTSampler.hpp"
 
-es_FFTSampler::es_FFTSampler(string device_path, int min_bin, int max_bin) : interface(device_path, 1, 970000), min_bin(min_bin), max_bin(max_bin) {
+es_FFTSampler::es_FFTSampler(string device_path, int min_bin, int max_bin, int thresh_mult) : interface(device_path, 1, 970000), min_bin(min_bin), max_bin(max_bin) {
     this->fft_object = new ffft::FFTRealFixLen <8>;
+    this->thresh_mult = thresh_mult;
 }
 
 void es_FFTSampler::takeSample() {
@@ -32,7 +33,7 @@ void es_FFTSampler::takeSample() {
         }
     }
     this->average_power = average_power / (SAMPLE_NUMBER/4-1);
-    int threshold = (int) (average_power * THRESHOLD_MULTIPLIER);
+    int threshold = (int) (average_power * this->thresh_mult);
     for (int i = this->min_bin; i <= this->max_bin; ++i) {
         float result = sqrt(fft_results[i] * fft_results[i] + fft_results[SAMPLE_NUMBER/4+i] * fft_results[SAMPLE_NUMBER/4+i]);
         if (result > threshold) {
