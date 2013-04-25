@@ -72,6 +72,7 @@ void es_Rec::enterReceiveLoop() {
                 pthread_mutex_lock ( this->cout_mutex );
                 std::cout << "Received: " << seq << ": " << asctime(timeinfo) << rec_time.tv_nsec << "ns" << std::endl;
                 pthread_mutex_unlock ( this->cout_mutex );
+                time_msg.clear();
                 
             } else if(byte_buf.size() != 0 && byte_buf.size() != 8) {
                 if (message.size() != 0) {
