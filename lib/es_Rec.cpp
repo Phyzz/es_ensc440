@@ -46,7 +46,9 @@ void es_Rec::enterReceiveLoop() {
                 char byte[2] = {'\0','\0'};
                 for (std::vector<int>::iterator it = byte_buf.begin(); it != byte_buf.end(); ++ it) {
                   if (*it == 2) {
-                        message.append("?");
+                        if (message.size() != 0) {
+                            message.append("?");
+                        }
                         break;
                     } else {
                         byte[0] <<= 1;
