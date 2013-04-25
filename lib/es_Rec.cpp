@@ -41,7 +41,9 @@ void es_Rec::enterReceiveLoop() {
                 pthread_mutex_unlock ( this->cout_mutex );
                 message.clear();
             } else if(byte_buf.size() != 0 && byte_buf.size() != 8) {
-                message.append("?");
+                if (message.size() != 0) {
+                    message.append("?");
+                }
             } else if(byte_buf.size() != 0) {
                 char byte[2] = {'\0','\0'};
                 for (std::vector<int>::iterator it = byte_buf.begin(); it != byte_buf.end(); ++ it) {
